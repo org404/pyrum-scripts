@@ -1,0 +1,3 @@
+[submodule "rumor"]
+	path = rumor
+	url = git@github.com:org404/rumor.git
