@@ -21,6 +21,14 @@ Running second container:
 ```
 You should almost immediately see a log, from 10 connected peers (default amount). Make sure you can find "connected to peer" in the log. And no errors. This confirms that you established connection successfully.
 
+### Clean up
+Connector container exists automatically on finish, but "server" container is set to run for weeks (with one huuge `sleep 99999m`). This is a friendly reminder to put that container down, when you don't need it.  
+For that enter `rumor` directory and run stop command:
+```
+cd rumor
+docker-compose down
+```
+
 ### Errors
 TODO
 
