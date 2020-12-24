@@ -27,4 +27,4 @@ RUN apt-get update \
 # Launch
 COPY connect.py .
 ENTRYPOINT ["python3"]
-CMD ["connect.py"]
+# CMD ["connect.py"]

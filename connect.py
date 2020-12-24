@@ -7,9 +7,12 @@ from pyrum import WebsocketConn, TCPConn, UnixConn, SubprocessConn, Rumor, Call
 
 import random
 import string
+import sys
 
 
-ADDRESS = "/ip4/0.0.0.0/tcp/9000/p2p/16Uiu2HAmJfkg3gZdggHPFmfB6tsDjqKcYVrLhSvifPq9LrvwEnKG"
+# Use command line to set target
+ADDRESS = sys.argv[1]
+# ADDRESS = "/ip4/0.0.0.0/tcp/9000/p2p/16Uiu2HAmJfkg3gZdggHPFmfB6tsDjqKcYVrLhSvifPq9LrvwEnKG"
 AMOUNT_OF_PEERS = 10
 
 
