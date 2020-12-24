@@ -1,12 +1,12 @@
 # Description
 This example let's you spin up listening rumor server (extremely light - 26MB) with p2p protocol and dv5 support. After that you can spin up another container with simple script (`connect.py`) that creates 10 clients and establishes connection to any address.  
 
-##### Pre-requirements
+### Pre-requirements
 Must have:  
 * docker  
 * docker-compose  
 
-##### Running example
+### Running example
 First, you should spin up a receiving server:
 ```
 ./server.sh  
@@ -20,6 +20,6 @@ Running "connector" container:
 ```
 You should almost immediately see a log, from 10 connected peers (default amount). Make sure you can find "connected to peer" in the log. And no errors. This confirms that you established connection successfully.
 
-##### Errors
+### Errors
 TODO
 
