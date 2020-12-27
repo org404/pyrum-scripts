@@ -7,6 +7,16 @@ Must have:
 * docker  
 * docker-compose  
 
+
+### Setup
+Clone repo and initialize submodules:  
+```
+git clone git@github.com:org404/pyrum-scripts.git
+# initialize
+git submodule update --init --recursive
+```
+
+
 ### Running example
 First, you should spin up a receiving server:
 ```
