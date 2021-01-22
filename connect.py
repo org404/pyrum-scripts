@@ -8,13 +8,18 @@ from pyrum import WebsocketConn, TCPConn, UnixConn, SubprocessConn, Rumor, Call
 import random
 import string
 import sys
+import os
 
 
 # Use command line to set target
 ADDRESS = sys.argv[1]
 # ADDRESS = "/ip4/0.0.0.0/tcp/9000/p2p/16Uiu2HAmJfkg3gZdggHPFmfB6tsDjqKcYVrLhSvifPq9LrvwEnKG"
 AMOUNT_OF_PEERS = 10
+PATH_TO_RUMOR = os.environ.get("PATH_TO_RUMOR", "./rumor/app")
 
+COLOR = "\n"  # r"\033[0;33m"
+END = "\n"  # r"\033[0m"  # No Color
+printc = lambda s: print(f"{COLOR}{s}{END}")
 
 def generator_names(n: int = None, names: list = None):
     if names:
@@ -32,23 +37,24 @@ def generator_names(n: int = None, names: list = None):
 async def basic_rpc_example(rumor: Rumor, addr: str, n_peers: int):
     actors = []
     for i, name in enumerate(generator_names(n_peers)):
-        print(f"working on actor-#{i} - {name}")
+        printc(f"working on actor-#{i} - {name}")
         actor = rumor.actor(name)
         await actor.host.start()
         # Flags are keyword arguments
         await actor.host.listen(tcp=33000 + i)
-        print(f"started actor-#{i}")
+        printc(f"started actor-#{i}")
         actor_addr = await actor.host.view().addr()
-        print(f"actor-#{i} host addr: {actor_addr}")
+        printc(f"actor-#{i} host addr: {actor_addr}")
         await actor.peer.connect(addr)
-        print(f"connected actor-#{i}!")
+        printc(f"connected actor-#{i}!")
 
     exit(0)
 
 
 async def run_example(addr: str, n_peers: int):
     # Optionally specify your own rumor executable, for local development/modding of Rumor
-    async with SubprocessConn(cmd='/rumor bare --level=trace') as conn:
+    async with SubprocessConn(cmd=f"{PATH_TO_RUMOR} bare --level=trace") as conn:
+    # async with SubprocessConn(cmd='/rumor bare --level=trace') as conn:
         # A Trio nursery hosts all the async tasks of the Rumor instance.
         async with trio.open_nursery() as nursery:
             # And optionally use Rumor(conn, nursery, debug=True) to be super verbose about Rumor communication.

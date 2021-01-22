@@ -24,6 +24,9 @@ RUN apt-get update \
  && pip3 install --no-cache-dir --upgrade pip wheel setuptools \
  && pip3 install --no-cache-dir -r requirements.txt
 
+# path to rumor inside container, different from the default
+ENV PATH_TO_RUMOR=/rumor
+
 # Launch
 COPY connect.py .
 ENTRYPOINT ["python3"]

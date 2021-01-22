@@ -15,9 +15,49 @@ git clone git@github.com:org404/pyrum-scripts.git
 # initialize
 git submodule update --init --recursive
 ```
+  
+You might also need python virtualenv. To install it type:
+```
+sudo apt-get install python3-virtualenv
+```
+And then create (if do not exist yet) and activate with:
+```
+# inside the project dir
+virtualenv -p python3.8 .venv
+source .venv/bin/activate
+```
+In addition, it is recommended to upgrade pip and utils:
+```
+python -m pip install -U pip wheel setuptools
+```
+Note: when you activated virtual env, `python` is an alias for your python3.8 instance. Otherwise (without virtualenv), you will probably need to run `python3`.
 
+### Connecting to Prysm client
+Installing deps:
+```
+python -m pip install -r requirements.txt
+```
+  
+Building rumor:
+```
+# go into rumor submodule
+cd rumor
+CGO_ENABLED=1 GOOS=linux go build -ldflags '-extldflags "-w -s"' -o app
+# go back to our proj
+cd ..
+```
+  
+Now you are ready to connect, to open prysm logs to see whether it's working, type:
+```
+sudo journalctl -fu prysm-beaconchain
+```
 
-### Running example
+Running script to connect to any reachable multiaddr:
+```
+./connect.sh <address>
+```
+  
+### Running example [Docker]
 First, you should spin up a receiving server:
 ```
 ./server.sh  
@@ -40,5 +80,6 @@ docker-compose down
 ```
 
 ### Errors
-TODO
-
+If you can't connect to the peer, make sure that:  
+* peer is reachable (it is inside your network)
+* make sure peer has enough available slots for connections; 
