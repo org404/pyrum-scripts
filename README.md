@@ -7,8 +7,14 @@ Must have:
 * docker  
 * docker-compose  
 
+**To configure Prysm to accept only local connections, apply `--p2p-allowlist=172.0.0.0/8` flag to your none when launching**
 
 ### Setup
+For some libraries we need external OS-level dependencies, on ubuntu do:
+```
+sudo apt-get install gcc libpq-dev python3-dev python3-pip python3-venv python3-wheel -y
+```
+  
 Clone repo and initialize submodules:  
 ```
 git clone git@github.com:org404/pyrum-scripts.git

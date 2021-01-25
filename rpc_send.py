@@ -13,8 +13,13 @@ import os
 
 
 # Use command line to set target
-ADDRESS = sys.argv[1]
-# ADDRESS = "/ip4/0.0.0.0/tcp/9000/p2p/16Uiu2HAmJfkg3gZdggHPFmfB6tsDjqKcYVrLhSvifPq9LrvwEnKG"
+if len(sys.argv) > 1:
+    ADDRESS = sys.argv[1]
+else:
+    print("No address supplied, trying hardcoded address..")
+    ADDRESS = "/ip4/172.31.20.107/tcp/13000/p2p/16Uiu2HAm2zw4bWPboDzFZqwKmsXoVbYozWWkxU5onqxaxGTjsxXJ"
+    print(f"ADDRESS: {ADDRESS}")
+
 AMOUNT_OF_PEERS = 100
 PATH_TO_RUMOR = os.environ.get("PATH_TO_RUMOR", "./rumor/app")
 
