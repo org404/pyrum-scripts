@@ -18,6 +18,7 @@ if len(sys.argv) > 1:
 else:
     print("No address supplied, trying hardcoded address..")
     ADDRESS = "/ip4/172.31.20.107/tcp/13000/p2p/16Uiu2HAm2zw4bWPboDzFZqwKmsXoVbYozWWkxU5onqxaxGTjsxXJ"
+    # ADDRESS = "/ip4/172.31.20.107/tcp/12000/p2p/16Uiu2HAm2zw4bWPboDzFZqwKmsXoVbYozWWkxU5onqxaxGTjsxXJ"
     print(f"ADDRESS: {ADDRESS}")
 
 AMOUNT_OF_PEERS = 100
@@ -76,11 +77,11 @@ async def basic_rpc_example(rumor: Rumor, addr: str, n_peers: int):
             printc(f"target connection: {target}")
             # Request in hex (some random transaction from the internet)
             # req = b"0xf86b80850ba43b7400825208947917bc33eea648809c285607579c9919fb864f8f8703baf82d03a0008025a0067940651530790861714b2e8fd8b080361d1ada048189000c07a66848afde46a069b041db7c29dbcc6becf42017ca7ac086b12bd53ec8ee494596f790fb6a0a69"
-            req = StatusReq(head_slot=12101240402414214).encode_bytes().hex()
+            # req = StatusReq(head_slot=12101240402414214).encode_bytes().hex()
             # Sending data
-            req_call = actor.rpc.status.req.raw(target["peer_id"], req, raw=True)
-            req_resp = await req_call
-            printc(f"req_resp: {req_resp}")
+            # req_call = actor.rpc.status.req.raw(target["peer_id"], req, raw=True)
+            # req_resp = await req_call
+            # printc(f"req_resp: {req_resp}")
         await trio.sleep(0.1)
     exit(0)
 
