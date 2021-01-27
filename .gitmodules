@@ -1,3 +1,6 @@
 [submodule "rumor"]
     path = rumor
     url = https://github.com/org404/rumor.git
+[submodule "prysm"]
+	path = prysm
+	url = ../prysm/
