@@ -20,30 +20,31 @@ CX31 = "cx31"  # 10.59 €/m - 0.017 €/h - 2vCPU - 8GB RAM  - 80GB storage  - 
 CX41 = "cx41"  # 18.92 €/m - 0.031 €/h - 4vCPU - 16GB RAM - 160GB storage - 20TB network cap - recommended specs by the Prysm team for full pledged client
 TYPE = CX11
 
-# Number of servers to create.
-if not os.environ.get("N"):
-    print(f"You didn't pass N env var for amount of servers to create, exiting!")
-    exit(1)
-else:
-    N = int(os.environ["N"])
-    print(f"Creating {N} amount of servers according to N env var ...")
-
 # OS name for the server images
 IMAGE = "ubuntu-20.04"
 
+
 # To delete servers use `-d` or `--delete` keywords
-if len(sys.argv) > 1 and sys.argv[1] == "-d" and sys.argv[1] == "--delete":
+if len(sys.argv) > 1 and (sys.argv[1] == "-d" or sys.argv[1] == "--delete"):
     servers = client.servers.get_all()
-    command = input(f"Servers to delete - {len(server)}. Do you confirm? [y/N] ")
+    command = input(f"Servers to delete - {len(servers)}. Do you confirm? [y/N] ")
     if command.lower() != "y":
         print("Didn't recieve confirmation, exiting ...")
         exit(1)
 
     for server in servers:
-        print(f"Deleting server of ID {server.id} with name {server.name}")
+        print(f"Deleting server of ID {server.id} with name {server.name}.")
         server.delete()
-        print(f"Deleted server with ID {server.id}.")
+        print(f"Deleted server with ID {server.id}!")
 else:
+    # Number of servers to create.
+    if not os.environ.get("N"):
+        print(f"You didn't pass N env var for amount of servers to create, exiting!")
+        exit(1)
+    else:
+        N = int(os.environ["N"])
+        print(f"Creating with {N} amount of servers according to N env var ...")
+
     for index in range(N):
         response = client.servers.create(
             name        = f"manifold-venom-{index}",
@@ -51,6 +52,7 @@ else:
             image       = Image(name=IMAGE)
         )
         print(f"Created server #{index} of ID {response.server.id}  ({TYPE}, {IMAGE}).")
+        print(f"Server's IPv4: {response.server.public_net.ipv4.ip}. Server's IPv6: {response.server.public_net.ipv6.ip}.")
         print(f"Root password for the server: {response.root_password}.")
         print("---------------")
 
