@@ -18,6 +18,16 @@ CX11 = "cx11"  # 2.96  €/m - 0.005 €/h - 1vCPU - 2GB RAM  - 20GB storage  - 
 CX21 = "cx21"  # 5.83  €/m - 0.010 €/h - 2vCPU - 4GB RAM  - 40GB storage  - 20TB network cap - medium, could probably run stripped client
 CX31 = "cx31"  # 10.59 €/m - 0.017 €/h - 2vCPU - 8GB RAM  - 80GB storage  - 20TB network cap - minimum specs by the Prysm team for full pledged client
 CX41 = "cx41"  # 18.92 €/m - 0.031 €/h - 4vCPU - 16GB RAM - 160GB storage - 20TB network cap - recommended specs by the Prysm team for full pledged client
+
+# In practise, it looks like CX41 would be enough to run 5 attacker nodes even if they will need to sync.
+# Running more nodes (if we somehow configure ipv6 traffic), for example 10 becomes very questionable due
+# to RAM and storage contraint (CPUs probably can handle this, though the sync will probably take up to
+# 2-3 times as long due to being overloaded and increased waste due to context switching between many
+# threads). So the worst case scenario (running full node) price for one victim (30 connections) will be
+# 6 instances of 5 nodes each, rounding up to about 0.2 €/h (taking into account fees). Thankfully,
+# network limits on hetzner are huge so we don't need to worry about that ever despite anything we do.
+
+# This actual type will be used in the code below
 TYPE = CX11
 
 # OS name for the server images
