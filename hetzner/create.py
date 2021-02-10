@@ -1,0 +1,56 @@
+from hcloud.server_types.domain import ServerType
+from hcloud.images.domain import Image
+from hcloud import Client
+import sys
+import os
+
+if not os.environ.get("TOKEN"):
+    print("Please, run this script with (Hetzner) TOKEN env variable!\nMore in the Authentication section - https://docs.hetzner.cloud/#authentication.")
+    exit(1)
+
+# Create a client
+client = Client(token=os.environ["TOKEN"])
+
+# Servers:
+# Taken from https://www.hetzner.com/cloud
+# Interesting options:
+CX11 = "cx11"  # 2.96  €/m - 0.005 €/h - 1vCPU - 2GB RAM  - 20GB storage  - 20TB network cap - the cheapest option, could run any scripts
+CX21 = "cx21"  # 5.83  €/m - 0.010 €/h - 2vCPU - 4GB RAM  - 40GB storage  - 20TB network cap - medium, could probably run stripped client
+CX31 = "cx31"  # 10.59 €/m - 0.017 €/h - 2vCPU - 8GB RAM  - 80GB storage  - 20TB network cap - minimum specs by the Prysm team for full pledged client
+CX41 = "cx41"  # 18.92 €/m - 0.031 €/h - 4vCPU - 16GB RAM - 160GB storage - 20TB network cap - recommended specs by the Prysm team for full pledged client
+TYPE = CX11
+
+# Number of servers to create.
+if not os.environ.get("N"):
+    print(f"You didn't pass N env var for amount of servers to create, exiting!")
+    exit(1)
+else:
+    N = int(os.environ["N"])
+    print(f"Creating {N} amount of servers according to N env var ...")
+
+# OS name for the server images
+IMAGE = "ubuntu-20.04"
+
+# To delete servers use `-d` or `--delete` keywords
+if len(sys.argv) > 1 and sys.argv[1] == "-d" and sys.argv[1] == "--delete":
+    servers = client.servers.get_all()
+    command = input(f"Servers to delete - {len(server)}. Do you confirm? [y/N] ")
+    if command.lower() != "y":
+        print("Didn't recieve confirmation, exiting ...")
+        exit(1)
+
+    for server in servers:
+        print(f"Deleting server of ID {server.id} with name {server.name}")
+        server.delete()
+        print(f"Deleted server with ID {server.id}.")
+else:
+    for index in range(N):
+        response = client.servers.create(
+            name        = f"manifold-venom-{index}",
+            server_type = ServerType(name=TYPE),
+            image       = Image(name=IMAGE)
+        )
+        print(f"Created server #{index} of ID {response.server.id}  ({TYPE}, {IMAGE}).")
+        print(f"Root password for the server: {response.root_password}.")
+        print("---------------")
+
