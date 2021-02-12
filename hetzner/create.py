@@ -59,7 +59,7 @@ else:
         exit(1)
     else:
         N = int(os.environ["N"])
-        print(f"Deploying with {N} amount of servers according to N env var ...")
+        print(f"Deploying {N} servers according to N env var ...")
         print("---------------")
 
     if not os.environ.get("GH_USER"):
