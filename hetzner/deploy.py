@@ -112,7 +112,7 @@ def out(p):
 
 
 async def deploy(index, ip: str, username: str, root_pass: str):
-    print(f"[Server #{index}] Connecting to the instance {ip} ...")
+    print(f"[Server #{index}] Connecting to the instance {username}@{ip} ...")
     p = pexpect.spawn(f"ssh -tt -o UserKnownHostsFile=/dev/null {username}@{ip}")
     # AUTHENTICATION block
     await aexp(p, ".*yes/no/.*")

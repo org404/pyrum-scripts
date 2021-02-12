@@ -40,7 +40,7 @@ TYPE = CX11
 IMAGE = "ubuntu-20.04"
 
 # Sleep to let server finish initialization
-SLEEP_PERIOD = 30
+SLEEP_PERIOD = CONFIG["wait"]
 USER = "root"
 
 

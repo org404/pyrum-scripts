@@ -4,6 +4,8 @@ general:
   servers: 3
   # Hetzner.com token (https://docs.hetzner.cloud/#authentication)
   token: null
+  # Wait for servers' initialization
+  wait: 15
 
 commands:
   # Dependencies
