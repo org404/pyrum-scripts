@@ -1,9 +1,8 @@
 from hcloud.server_types.domain import ServerType
 from hcloud.images.domain import Image
+from deploy import deploy, start
 from hcloud import Client
-from deploy import deploy
-import socket
-import time
+import asyncio
 import sys
 import os
 
@@ -63,6 +62,15 @@ else:
         print(f"Deploying with {N} amount of servers according to N env var ...")
         print("---------------")
 
+    if not os.environ.get("GH_USER"):
+        print("Please, run this script with GH_USER env variable!\nThis is required for private repos!")
+        exit(1)
+
+    if not os.environ.get("GH_PASS"):
+        print("Please, run this script with GH_PASS (github auth token) env variable!\nThis is required for private repos!")
+        exit(1)
+
+    tasks = list()
     for index in range(N):
         response = client.servers.create(
             name        = f"manifold-venom-{index}",
@@ -72,21 +80,27 @@ else:
         print(f"Created server #{index} of ID {response.server.id}  ({TYPE}, {IMAGE}).")
         print(f"Server's IPv4: {response.server.public_net.ipv4.ip}. Server's IPv6: {response.server.public_net.ipv6.ip}.")
         print(f"Root password for the server: {response.root_password}.")
-        print("---------------")
-        actions = list()
-        if response.action:
-            actions.append(response.action)
-        if response.next_actions:
-            actions.extend(response.next_actions)
 
-        print(f"Awaiting {len(actions)} actions ...")
+        actions = list()
+        if response.action:       actions.append(response.action)
+        if response.next_actions: actions.extend(response.next_actions)
+
+        print(f"Awaiting {len(actions)} (initialization) actions ...")
         for i, a in enumerate(actions):
-            print(f"Waiting for action #{i} - status: {a.status} ...")
             a.wait_until_finished()
-            print(f"Action #{i} complete! (status: {a.status})")
         print(f"Server status: {response.server.status} ... ")
-        print(f"Sleeping for {SLEEP_PERIOD} seconds ...")
-        time.sleep(SLEEP_PERIOD)
+        print("---------------")
         # Running deployment
-        deploy(response.server.public_net.ipv4.ip, USER, response.root_password)
+        tasks.append(deploy(
+            index,
+            response.server.public_net.ipv4.ip,
+            USER,
+            response.root_password,
+            os.environ["GH_USER"],
+            os.environ["GH_PASS"]
+        ))
+
+    asyncio.run(start(tasks, SLEEP_PERIOD))
+    print("---------------")
+    print("Done!")
 
