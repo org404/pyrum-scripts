@@ -1,9 +1,13 @@
 import pexpect
 import asyncio
+import string
+import random
 import yaml
 
 
-NEW_PASS = "jfsans12985vh21nj4v"
+def gen_passwd():
+    characters = string.ascii_letters + string.digits
+    return "".join(random.choice(characters) for x in range(24))
 
 
 def read_config(path: str = None):
@@ -108,7 +112,7 @@ def out(p):
 
 
 async def deploy(index, ip: str, username: str, root_pass: str):
-    print(f"Connecting to the instance {ip} ...")
+    print(f"[Server #{index}] Connecting to the instance {ip} ...")
     p = pexpect.spawn(f"ssh -tt -o UserKnownHostsFile=/dev/null {username}@{ip}")
     # AUTHENTICATION block
     await aexp(p, ".*yes/no/.*")
@@ -117,11 +121,12 @@ async def deploy(index, ip: str, username: str, root_pass: str):
     p.sendline(root_pass)  # log in
     await aexp(p, "urrent pass")
     p.sendline(root_pass)  # change pass
+    new_passwd = gen_passwd()
+    print(f"[Server #{index}] Changed password to {new_passwd} ...")
     await aexp(p, "New password:")
-    # We are doing this everywhere! @securiti
-    p.sendline(NEW_PASS)  # change pass
+    p.sendline(new_passwd)  # change pass
     await aexp(p, "new password:")
-    p.sendline(NEW_PASS)  # change pass
+    p.sendline(new_passwd)  # change pass
 
     context = {
         "index": index,
