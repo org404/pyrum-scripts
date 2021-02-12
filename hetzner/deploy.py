@@ -127,15 +127,16 @@ async def deploy(index, ip: str, username: str, root_pass: str):
         "index": index,
     }
 
-    # This commands will be executed.
     commands, assertions = parse_config(context)
+    # This commands will be executed.
     for item in commands:
         await cmd(p, item["command"])
         if item["show"]: out(p)
-
     # Running assertions
     for item in assertions:
         await do_assert(p, item, context)
+        if item["show"]: out(p)
+
     # Report about assertion-tests if there were any
     if assertions:
         print(f"[Server #{index}]: successfully ran {len(assertions)} assertions!")
