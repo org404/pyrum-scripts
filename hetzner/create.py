@@ -1,17 +1,21 @@
 from hcloud.server_types.domain import ServerType
+from deploy import deploy, start, read_config
 from hcloud.images.domain import Image
-from deploy import deploy, start
 from hcloud import Client
 import asyncio
+import yaml
 import sys
 import os
 
-if not os.environ.get("TOKEN"):
-    print("Please, run this script with (Hetzner) TOKEN env variable!\nMore in the Authentication section - https://docs.hetzner.cloud/#authentication.")
+CONF = read_config()
+CONFIG = CONF["general"]
+
+if not CONFIG.get("token"):
+    print("Please, run this script with (Hetzner) \"token\" variable in config.yml!\nMore in the Authentication section - https://docs.hetzner.cloud/#authentication.")
     exit(1)
 
 # Create a client
-client = Client(token=os.environ["TOKEN"])
+client = Client(token=CONFIG["token"])
 
 # Servers:
 # Taken from https://www.hetzner.com/cloud
@@ -54,21 +58,13 @@ if len(sys.argv) > 1 and (sys.argv[1] == "-d" or sys.argv[1] == "--delete"):
         print(f"Deleted server with ID {server.id}!")
 else:
     # Number of servers to create.
-    if not os.environ.get("N"):
-        print(f"You didn't pass N env var for amount of servers to create, exiting!")
+    if not CONFIG.get("servers"):
+        print(f"You didn't set \"servers\" var for amount of servers to create, exiting!")
         exit(1)
     else:
-        N = int(os.environ["N"])
-        print(f"Deploying {N} servers according to N env var ...")
+        N = int(CONFIG["servers"])
+        print(f"Deploying {N} servers according to config.yml ...")
         print("---------------")
-
-    if not os.environ.get("GH_USER"):
-        print("Please, run this script with GH_USER env variable!\nThis is required for private repos!")
-        exit(1)
-
-    if not os.environ.get("GH_PASS"):
-        print("Please, run this script with GH_PASS (github auth token) env variable!\nThis is required for private repos!")
-        exit(1)
 
     tasks = list()
     for index in range(N):
@@ -96,8 +92,6 @@ else:
             response.server.public_net.ipv4.ip,
             USER,
             response.root_password,
-            os.environ["GH_USER"],
-            os.environ["GH_PASS"]
         ))
 
     asyncio.run(start(tasks, SLEEP_PERIOD))

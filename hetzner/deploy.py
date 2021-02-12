@@ -1,27 +1,95 @@
-import subprocess
 import pexpect
 import asyncio
-import sys
+import yaml
 
 
 NEW_PASS = "jfsans12985vh21nj4v"
-REPO_URL = "https://{}github.com/org404/prysm.git"
 
 
-def make_url(user, passwd):
-    if user and passwd: prefix = f"{user}:{passwd}@"
-    else:               prefix =  ""
-    return REPO_URL.format(prefix)
+def read_config(path: str = None):
+    if not path: path = "config.yml"
+
+    with open(path) as conf:
+        config = yaml.load(conf, Loader=yaml.FullLoader)
+
+    return config
 
 
-async def aexp(p, text: str, timeout: int = -1):
+def parse_config(context: dict = {}):
+    config = read_config()
+
+    commands = list()
+    for item in config["commands"]:
+        if isinstance(item, str):
+            commands.append({
+                "command": item.format(
+                    **context
+                ),
+                "show": False,
+            })
+        elif isinstance(item, dict):
+            show = item.pop("show") if "show" in item else False
+
+            commands.append({
+                "command": item["command"].format(
+                    **context, **item,
+                ),
+                "show": show,
+            })
+        else:
+            raise NotImplementedError(
+                f"Unparsable config type: {type(item)}.\n"
+                f"Value: {item}."
+            )
+
+    assertions = list()
+    for item in config["assertions"]:
+        if isinstance(item, str):
+            assertions.append({
+                "command": item.format(
+                    **context
+                ),
+            })
+        elif isinstance(item, dict):
+            show = item.pop("show") if "show" in item else False
+            contains = item.pop("contains") if "contains" in item else False
+
+            assertions.append({
+                "command": item["command"].format(
+                    **context, **item,
+                ),
+                "show": show,
+                "contains": contains,
+            })
+        else:
+            raise NotImplementedError(
+                f"Unparsable config type: {type(item)}.\n"
+                f"Value: {item}."
+            )
+
+    return commands, assertions
+
+
+async def do_assert(p, item, context):
+    await cmd(p, item["command"])
+
+    if "contains" in item:
+        if item["contains"] not in p.before.decode():
+            raise Exception(
+                "[Server #{index}] Assertion Error: command output didn't contain \"{contains}\"".format(
+                    **context, contains=item["contains"],
+                )
+            )
+
+
+async def aexp(p, text: str, timeout: int = 300):
     return await p.expect(text, async_=True, timeout=timeout)
 
 
 async def cmd(p, command: str):
     # [DEBUG] print(f">>> {command}")
     p.sendline(command)
-    await aexp(p, "~.*?#", timeout=300)
+    await aexp(p, "~.*?#")
     # [DEBUG] out(p)
 
 
@@ -39,11 +107,9 @@ def out(p):
          print(line)
 
 
-async def deploy(index, ip: str, username: str, root_pass: str, gh_user: str = None, gh_pass: str = None):
-    repo_url = make_url(gh_user, gh_pass)
-
+async def deploy(index, ip: str, username: str, root_pass: str):
     print(f"Connecting to the instance {ip} ...")
-    p = pexpect.spawn(f"ssh -tt {username}@{ip}")
+    p = pexpect.spawn(f"ssh -tt -o UserKnownHostsFile=/dev/null {username}@{ip}")
     # AUTHENTICATION block
     await aexp(p, ".*yes/no/.*")
     p.sendline("yes")  # accept ip
@@ -57,41 +123,26 @@ async def deploy(index, ip: str, username: str, root_pass: str, gh_user: str = N
     await aexp(p, "new password:")
     p.sendline(NEW_PASS)  # change pass
 
-    # ACTUAL COMMANDS
-    # 42 - is a magic number that prints output of the command before it
+    context = {
+        "index": index,
+    }
 
     # This commands will be executed.
-    commands = [
-        # Dependencies
-        "apt-get update && apt-get upgrade -qq -y && apt-get install -qq -y " \
-        "docker.io golang git curl gnupg",
-        # Bazel util
-        "curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel.gpg",
-        "mv bazel.gpg /etc/apt/trusted.gpg.d/",
-        "echo 'deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8' | tee /etc/apt/sources.list.d/bazel.list",
-        "apt-get update && apt-get install -qq -y bazel",
+    commands, assertions = parse_config(context)
+    for item in commands:
+        await cmd(p, item["command"])
+        if item["show"]: out(p)
 
-        f"git clone {repo_url}",
-        "cd prysm",
-        "ls",
-        # TODO: Running exhaust script
-        # TODO: env vars "./exhaust.sh"
-
-        # Print additional information
-        f"echo \"Server #{index} " \
-        "(ipv4='$(curl -s -4 ifconfig.io)', ipv6='$(curl -s -6 ifconfig.io)') " \
-        "finished deployement.\"",
-        42,
-    ]
-
-    # want_output = False
-    for c in commands:
-        if c == 42: out(p); continue
-
-        await cmd(p, c)
+    # Running assertions
+    for item in assertions:
+        await do_assert(p, item, context)
+    # Report about assertion-tests if there were any
+    if assertions:
+        print(f"[Server #{index}]: successfully ran {len(assertions)} assertions!")
 
 
 async def start(coros: list, sleep_for: int):
     print(f"Sleeping for {sleep_for} seconds ...")
     await asyncio.sleep(sleep_for)
     return await asyncio.gather(*coros)
+

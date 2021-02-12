@@ -1,0 +1,31 @@
+
+general:
+  servers: 3
+  token: null
+
+commands:
+  # Dependencies
+  - "apt-get update && apt-get upgrade -qq -y && apt-get install -qq -y docker.io golang git curl gnupg"
+  # Bazel install
+  - "curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel.gpg"
+  - "mv bazel.gpg /etc/apt/trusted.gpg.d/"
+  - "echo 'deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8' | tee /etc/apt/sources.list.d/bazel.list"
+  - "apt-get update && apt-get install -qq -y bazel"
+  # Clone the project
+  - command: "git clone https://{username}:{password}@github.com/org404/prysm.git"
+    username: null
+    password: null
+  - "cd prysm"
+  # Report message. "index" is a builtin var that any message has access to.
+  - command: "echo \"[Server #{index}] (ipv4='$(curl -s -4 ifconfig.io)', ipv6='$(curl -s -6 ifconfig.io)') finished deployement.\""
+    show: True
+
+assertions:
+  # just for testing, we check if directory contains 'exhaust.sh'
+  - command: "ls"
+    contains: "exhaust.sh"
+  #  show: True  # Off by default
+  # check if attacker is running
+  # - command: "docker ps"
+  #   contains: "attacker"
+

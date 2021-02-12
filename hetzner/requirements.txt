@@ -1,2 +1,3 @@
-hcloud
 pexpect
+hcloud
+pyyaml
