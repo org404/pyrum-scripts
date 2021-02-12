@@ -1,6 +1,9 @@
 from hcloud.server_types.domain import ServerType
 from hcloud.images.domain import Image
 from hcloud import Client
+from deploy import deploy
+import socket
+import time
 import sys
 import os
 
@@ -33,6 +36,10 @@ TYPE = CX11
 # OS name for the server images
 IMAGE = "ubuntu-20.04"
 
+# Sleep to let server finish initialization
+SLEEP_PERIOD = 30
+USER = "root"
+
 
 # To delete servers use `-d` or `--delete` keywords
 if len(sys.argv) > 1 and (sys.argv[1] == "-d" or sys.argv[1] == "--delete"):
@@ -53,16 +60,33 @@ else:
         exit(1)
     else:
         N = int(os.environ["N"])
-        print(f"Creating with {N} amount of servers according to N env var ...")
+        print(f"Deploying with {N} amount of servers according to N env var ...")
+        print("---------------")
 
     for index in range(N):
         response = client.servers.create(
             name        = f"manifold-venom-{index}",
             server_type = ServerType(name=TYPE),
-            image       = Image(name=IMAGE)
+            image       = Image(name=IMAGE),
         )
         print(f"Created server #{index} of ID {response.server.id}  ({TYPE}, {IMAGE}).")
         print(f"Server's IPv4: {response.server.public_net.ipv4.ip}. Server's IPv6: {response.server.public_net.ipv6.ip}.")
         print(f"Root password for the server: {response.root_password}.")
         print("---------------")
+        actions = list()
+        if response.action:
+            actions.append(response.action)
+        if response.next_actions:
+            actions.extend(response.next_actions)
+
+        print(f"Awaiting {len(actions)} actions ...")
+        for i, a in enumerate(actions):
+            print(f"Waiting for action #{i} - status: {a.status} ...")
+            a.wait_until_finished()
+            print(f"Action #{i} complete! (status: {a.status})")
+        print(f"Server status: {response.server.status} ... ")
+        print(f"Sleeping for {SLEEP_PERIOD} seconds ...")
+        time.sleep(SLEEP_PERIOD)
+        # Running deployment
+        deploy(response.server.public_net.ipv4.ip, USER, response.root_password)
 
