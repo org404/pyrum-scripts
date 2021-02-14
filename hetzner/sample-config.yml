@@ -6,6 +6,10 @@ general:
   token: null
   # Wait for servers' initialization
   wait: 15
+  # Install mullvad vpn on the server (https://mullvad.net)
+  # Any account number contains of 16 digits as of February 2021
+  #mullvad:
+    #account: XXXXYYYYXXXXYYYY
 
 commands:
   # Dependencies

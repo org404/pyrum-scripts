@@ -1,8 +1,13 @@
+from mullvad import commands as mv_commands, assertions as mv_assertions
 import pexpect
 import asyncio
 import string
 import random
 import yaml
+
+
+CONF = read_config()
+CONFIG = CONF["general"]
 
 
 def gen_passwd():
@@ -90,10 +95,10 @@ async def aexp(p, text: str, timeout: int = 300):
     return await p.expect(text, async_=True, timeout=timeout)
 
 
-async def cmd(p, command: str):
+async def cmd(p, command: str, expect: str = "~.*?#"):
     # [DEBUG] print(f">>> {command}")
     p.sendline(command)
-    await aexp(p, "~.*?#")
+    await aexp(p, expect)
     # [DEBUG] out(p)
 
 
@@ -131,6 +136,16 @@ async def deploy(index, ip: str, username: str, root_pass: str):
     context = {
         "index": index,
     }
+
+    # If mullvad vpn is configured, we install/launch it first
+    mullvad = CONFIG.get("mullvad")
+    if mullvad:
+        # TODO: Test this, this probably will drop connection when launching vpn
+        context["account"] = CONFIG["account"]
+        for item in mv_commands(**context):
+            await cmd(p, *item)
+        for item in mv_assertions(**context):
+            await do_assert(p, item, context)
 
     commands, assertions = parse_config(context)
     # This commands will be executed.
