@@ -1,5 +1,5 @@
+from mullvad.lib import commands as mv_commands, assertions as mv_assertions
 from lib import read_config, parse_config, gen_passwd, aexp, cmd, do_assert
-from mullvad import commands as mv_commands, assertions as mv_assertions
 import pexpect
 import asyncio
 
