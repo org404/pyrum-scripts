@@ -2,14 +2,16 @@ from typing import Generator, Tuple, Dict
 
 
 __all__ = (
-    "commands",
+    "run_mullvad",
     "assertions",
+    "INSTALL_MULLVAD",
+    "RUN_MULLVAD",
 )
 
 
 # By the default we expect bash return, otherwise if tuple is provided,
 # second argument will be an expected output string
-COMMANDS = (
+INSTALL_MULLVAD = (
     "apt-get update && apt-get install -qq -y curl jq openresolv wireguard",
     "curl -LO https://mullvad.net/media/files/mullvad-wg.sh",
     "chmod +x ./mullvad-wg.sh",
@@ -18,7 +20,10 @@ COMMANDS = (
     ("./mullvad-wg.sh", "Mullvad account number:"),
     # This is an important part, here you have to input account number
     "{MULLVAD_ID}",
+)
 
+
+RUN_MULLVAD = (
     # We can predefine which countries/servers we want
     # Examples:
     #   - "export NEW_WG=mullvad-gb19",
@@ -31,13 +36,16 @@ COMMANDS = (
 )
 
 
+COMMANDS = INSTALL_MULLVAD + RUN_MULLVAD
+
+
 ASSERTIONS = (
     ("wg", "interface: "),
 )
 
 
-def commands(**kwargs) -> Generator[Tuple[str, str], None, None]:
-    for item in COMMANDS:
+def run_mullvad(commands: tuple = COMMANDS, **kwargs) -> Generator[Tuple[str, str], None, None]:
+    for item in commands:
         if isinstance(item, str):
             yield item.format(**kwargs), None
         elif isinstance(item, tuple):
@@ -47,7 +55,7 @@ def commands(**kwargs) -> Generator[Tuple[str, str], None, None]:
             raise NotImplementedError(f"Argument {item} is not supported!")
 
 
-def assertions(**kwargs) -> Generator[Dict[str, str], None, None]:
+def mullvad_assertions(**kwargs) -> Generator[Dict[str, str], None, None]:
     for item in ASSERTIONS:
         if isinstance(item, str):
             yield {
@@ -67,11 +75,11 @@ def assertions(**kwargs) -> Generator[Dict[str, str], None, None]:
 if __name__ == "__main__":
     ctx = {"a": 1, "MULLVAD_ID": "1111222233334444"}
 
-    for cmd, expect in commands(**ctx):
-        print(expect if expect else "~#", end=" ")
-        print(cmd)
+    for cmd, expect in run_mullvad(commands=INSTALL_MULLVAD,**ctx):
+        print(">>>", cmd)
+        print("<<<", expect if expect else "Awaiting for shell ...")
     print(f"{'-' * 16}\nDoing assertions:\n{'-' * 16}")
-    for i, item in enumerate(assertions(**ctx)):
+    for i, item in enumerate(mullvad_assertions(**ctx)):
         print(f"Assertion #{i}")
         print("cmd:\t\t", item["command"])
         if item["contains"]: print("contains:\t", item["contains"])
