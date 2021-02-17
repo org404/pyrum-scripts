@@ -1,14 +1,13 @@
-from hcloud.server_types.domain import ServerType
-from hcloud.images.domain import Image
 from deploy import deploy, start
-from lib import read_config
 from hcloud import Client
+from lib import Runner
 import asyncio
+import time
 import yaml
 import sys
 import os
 
-CONF = read_config()
+CONF = Runner.read_config()
 CONFIG = CONF["general"]
 
 if not CONFIG.get("token"):
@@ -58,44 +57,18 @@ if len(sys.argv) > 1 and (sys.argv[1] == "-d" or sys.argv[1] == "--delete"):
         server.delete()
         print(f"Deleted server with ID {server.id}!")
 else:
+    start_t = time.time()
     # Number of servers to create.
     if not CONFIG.get("servers"):
         print(f"You didn't set \"servers\" var for amount of servers to create, exiting!")
         exit(1)
     else:
         N = int(CONFIG["servers"])
-        print(f"Deploying {N} servers according to config.yml ...")
-        print("---------------")
+        print(f"[Global] Deploying {N} servers according to config.yml ...")
+        print("----------------------------------------------")
 
-    tasks = list()
-    for index in range(N):
-        response = client.servers.create(
-            name        = f"manifold-venom-{index}",
-            server_type = ServerType(name=TYPE),
-            image       = Image(name=IMAGE),
-        )
-        print(f"Created server #{index} of ID {response.server.id}  ({TYPE}, {IMAGE}).")
-        print(f"Server's IPv4: {response.server.public_net.ipv4.ip}. Server's IPv6: {response.server.public_net.ipv6.ip}.")
-        print(f"Root password for the server: {response.root_password}.")
-
-        actions = list()
-        if response.action:       actions.append(response.action)
-        if response.next_actions: actions.extend(response.next_actions)
-
-        print(f"Awaiting {len(actions)} (initialization) actions ...")
-        for i, a in enumerate(actions):
-            a.wait_until_finished()
-        print(f"Server status: {response.server.status} ... ")
-        print("---------------")
-        # Running deployment
-        tasks.append(deploy(
-            index,
-            response.server.public_net.ipv4.ip,
-            USER,
-            response.root_password,
-        ))
-
-    asyncio.run(start(tasks, SLEEP_PERIOD))
-    print("---------------")
-    print("Done!")
+    tasks = [Runner.create_server(client, TYPE, IMAGE, i) for i in range(N)]
+    asyncio.run(start(tasks, SLEEP_PERIOD, USER))
+    print("----------------------------------------------")
+    print(f"[Global] Done in {round(time.time() - start_t, 2)} seconds!")
 

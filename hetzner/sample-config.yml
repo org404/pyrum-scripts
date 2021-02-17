@@ -5,7 +5,7 @@ general:
   # Hetzner.com token (https://docs.hetzner.cloud/#authentication)
   token: null
   # Wait for servers' initialization
-  wait: 15
+  wait: 30
   # Install mullvad vpn on the server (https://mullvad.net)
   # Any account number contains of 16 digits as of February 2021
   #mullvad:
@@ -25,7 +25,7 @@ commands:
     password: null
   - "cd prysm"
   # Report message. "index" is a builtin var that any message has access to.
-  - command: "echo \"[Server #{index}] (ipv4='$(curl -s -4 ifconfig.io)', ipv6='$(curl -s -6 ifconfig.io)') finished deployement.\""
+  - command: "echo \"(ipv4='$(curl -s -4 ifconfig.io)', ipv6='$(curl -s -6 ifconfig.io)') finished deployement.\""
     show: True
 
 assertions:

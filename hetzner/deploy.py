@@ -1,62 +1,65 @@
-from lib import read_config, parse_config, gen_passwd, aexp, cmd, do_assert
 from mullvad.lib import run_mullvad, mullvad_assertions
-from tqdm import tqdm
+from lib import Runner
 import pexpect
 import asyncio
 
 
-CONF = read_config()
+CONF = Runner.read_config()
 CONFIG = CONF["general"]
 
 
 async def deploy(index, ip: str, username: str, root_pass: str):
     print(f"[Server #{index}] Connecting to the instance {username}@{ip} ...")
     p = pexpect.spawn(f"ssh -tt -o UserKnownHostsFile=/dev/null {username}@{ip}")
-    # AUTHENTICATION block
-    await aexp(p, ".*yes/no/.*")
-    p.sendline("yes")  # accept ip
-    await aexp(p, "'s password")
-    p.sendline(root_pass)  # log in
-    await aexp(p, "urrent pass")
-    p.sendline(root_pass)  # change pass
-    new_passwd = gen_passwd()
-    print(f"[Server #{index}] Changed password to {new_passwd} ...")
-    await aexp(p, "New password:")
-    p.sendline(new_passwd)  # change pass
-    await aexp(p, "new password:")
-    p.sendline(new_passwd)  # change pass
-
     context = {
         "index": index,
+        "mullvad": CONFIG.get("mullvad", {}).get("account"),
     }
+    r = Runner(p, context)
+    # AUTHENTICATION block
+    await r.aexp(".*yes/no/.*")
+    await r.send("yes")  # accept ip
+    await r.aexp("'s password")
+    await r.send(root_pass)  # log in
+    await r.aexp("urrent pass")
+    await r.send(root_pass)  # change pass
+    # Here we generate and show new password
+    new_passwd = r.gen_passwd()
+    print(f"[Server #{index}] Changed password to {new_passwd} ...")
+    await r.aexp("New password:")
+    await r.send(new_passwd)  # change pass
+    await r.aexp("new password:")
+    await r.send(new_passwd)  # confirm pass
 
     # If mullvad vpn is configured, we install/launch it first
-    mullvad = CONFIG.get("mullvad")
-    if mullvad:
+    if context["mullvad"]:
         # TODO: Test this, this probably will drop connection when launching vpn
-        context["account"] = mullvad["account"]
         for item in run_mullvad(**context):
-            await cmd(p, *item)
+            await r.cmd(*item)
         for item in mullvad_assertions(**context):
-            await do_assert(p, item, context)
+            await r.do_assert(item)
 
-    commands, assertions = parse_config(context)
+    commands, assertions = r.parse_config()
     # This commands will be executed.
-    for item in tqdm(commands):
-        await cmd(p, item["command"])
-        if item["show"]: out(p)
+    for item in commands:
+        await r.cmd(item["command"])
+        if item["show"]: r.out()
     # Running assertions
-    for item in tqdm(assertions):
-        await do_assert(p, item, context)
-        if item["show"]: out(p)
+    for item in assertions:
+        await r.do_assert(item)
+        if item["show"]: r.out()
 
     # Report about assertion-tests if there were any
     if assertions:
-        print(f"[Server #{index}]: successfully ran {len(assertions)} assertions!")
+        r.sys_p(f"Successfully ran {len(assertions)} assertions!", new_line = True, prefix = None)
 
 
-async def start(coros: list, sleep_for: int):
-    print(f"Sleeping for {sleep_for} seconds ...")
+async def start(server_tasks: list, sleep_for: int, user: str):
+    resp_list = await asyncio.gather(*server_tasks)
+    print("----------------------------------------------")
+    print(f"[Global] Sleeping for {sleep_for} seconds ...")
+    print("----------------------------------------------")
     await asyncio.sleep(sleep_for)
+    coros = [deploy(i, r.server.public_net.ipv4.ip, user, r.root_password) for i, r in enumerate(resp_list)]
     return await asyncio.gather(*coros)
 
