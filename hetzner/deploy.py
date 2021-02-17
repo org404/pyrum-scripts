@@ -1,5 +1,6 @@
-from mullvad.lib import commands as mv_commands, assertions as mv_assertions
 from lib import read_config, parse_config, gen_passwd, aexp, cmd, do_assert
+from mullvad.lib import run_mullvad, mullvad_assertions
+from tqdm import tqdm
 import pexpect
 import asyncio
 
@@ -33,19 +34,19 @@ async def deploy(index, ip: str, username: str, root_pass: str):
     mullvad = CONFIG.get("mullvad")
     if mullvad:
         # TODO: Test this, this probably will drop connection when launching vpn
-        context["account"] = CONFIG["account"]
-        for item in mv_commands(**context):
+        context["account"] = mullvad["account"]
+        for item in run_mullvad(**context):
             await cmd(p, *item)
-        for item in mv_assertions(**context):
+        for item in mullvad_assertions(**context):
             await do_assert(p, item, context)
 
     commands, assertions = parse_config(context)
     # This commands will be executed.
-    for item in commands:
+    for item in tqdm(commands):
         await cmd(p, item["command"])
         if item["show"]: out(p)
     # Running assertions
-    for item in assertions:
+    for item in tqdm(assertions):
         await do_assert(p, item, context)
         if item["show"]: out(p)
 
