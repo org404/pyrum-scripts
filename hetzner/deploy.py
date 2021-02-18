@@ -41,9 +41,19 @@ async def deploy(index, ip: str, username: str, root_pass: str):
 
     commands, assertions = r.parse_config()
     # This commands will be executed.
+    # bool_true = 1
     for item in commands:
-        await r.cmd(item["command"])
+        if item["expect"]:
+            await r.cmd(item["command"], expect=item["expect"])
+        else:
+            await r.cmd(item["command"])
+
+        # if bool_true:
+        #     bool_true -= 1
+        #     await asyncio.sleep(30)
+
         if item["show"]: r.out()
+
     # Running assertions
     for item in assertions:
         await r.do_assert(item)
@@ -58,8 +68,9 @@ async def start(server_tasks: list, sleep_for: int, user: str):
     resp_list = await asyncio.gather(*server_tasks)
     print("----------------------------------------------")
     print(f"[Global] Sleeping for {sleep_for} seconds ...")
-    print("----------------------------------------------")
     await asyncio.sleep(sleep_for)
+    # Draw line after sleep to make current action very clear
+    print("----------------------------------------------")
     coros = [deploy(i, r.server.public_net.ipv4.ip, user, r.root_password) for i, r in enumerate(resp_list)]
     return await asyncio.gather(*coros)
 

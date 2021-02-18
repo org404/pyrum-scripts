@@ -34,7 +34,7 @@ CX41 = "cx41"  # 18.92 €/m - 0.031 €/h - 4vCPU - 16GB RAM - 160GB storage - 
 # network limits on hetzner are huge so we don't need to worry about that ever despite anything we do.
 
 # This actual type will be used in the code below
-TYPE = CX11
+TYPE = CONFIG.get("server_type", CX11)
 
 # OS name for the server images
 IMAGE = "ubuntu-20.04"

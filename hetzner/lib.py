@@ -43,10 +43,12 @@ class Runner:
                     ),
                     "show": False,
                     "period": 1,
+                    "expect": None,
                 })
             elif isinstance(item, dict):
                 show = item.pop("show") if "show" in item else False
                 period = item.pop("period") if "period" in item else 1
+                expect = item.pop("expect") if "expect" in item else None
 
                 commands.append({
                     "command": item["command"].format(
@@ -54,6 +56,7 @@ class Runner:
                     ),
                     "show": show,
                     "period": period,
+                    "expect": expect,
                 })
             else:
                 raise NotImplementedError(
@@ -68,6 +71,9 @@ class Runner:
                     "command": item.format(
                         **self.context
                     ),
+                    show: False,
+                    period: 1,
+                    contains: False,
                 })
             elif isinstance(item, dict):
                 show = item.pop("show") if "show" in item else False
@@ -93,7 +99,6 @@ class Runner:
     def sys_p(self, text: str, new_line: bool = False, prefix: str = "..."):
         # We can't do this inline
         text = text.strip(" \n")
-        # nl = "\n" if new_line else ""
         index = self.context["index"]
         if not prefix:
             prefix = ""
@@ -118,25 +123,25 @@ class Runner:
                 lines.append(l)
         # First line is our command
         command = lines.pop(0)
-        # TODO: do we really want this?: print(f">>> {command}")
         # The last line is shell prompt
         for line in lines[:-1]:
             self.sys_p(line, new_line = True)
 
-    async def aexp(self, text: str, timeout: int = 300):
+    async def aexp(self, text: str, timeout: int = 1800):  # set timeout to a large value, default timeout is supposed to be -1 (infinite), but in reality it errors in a couple of minutes
         return await self.p.expect(text, async_=True, timeout=timeout)
 
     async def cmd(self, command: str, expect: str = "~.*?#", show_command: bool = True):
-        await self.send(command)
-        await self.aexp(expect)
         if show_command:
             # print commands
             self.sys_p(command, prefix = "~#:")
+        # Run actual command
+        await self.send(command)
+        await self.aexp(expect)
 
     async def do_assert(self, item):
         await self.cmd(item["command"], show_command = False)
 
-        if "contains" in item:
+        if item["contains"]:
             if item["contains"] not in self.p.before.decode():
                 index = self.context["index"]
                 raise Exception(
