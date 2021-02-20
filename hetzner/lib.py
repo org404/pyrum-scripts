@@ -8,8 +8,10 @@ import sys
 
 
 class Runner:
-    # A terrible hack
+    # A hack to sync writing
     NEEDS_NEW_LINE = False
+    # Global indecies for config arrays
+    INDECIES = {}
 
     def __init__(self, tunnel, context: dict):
         self.p = tunnel
@@ -49,10 +51,22 @@ class Runner:
                 show = item.pop("show") if "show" in item else False
                 period = item.pop("period") if "period" in item else 1
                 expect = item.pop("expect") if "expect" in item else None
+                if "use" in item:
+                    use = item["use"]
+                    if use not in config.get("vars", []):
+                        raise ValueError(f"Couldn't find '{use}' in vars!")
+                    if use not in self.INDECIES:
+                        self.INDECIES[use] = 0
+                        it = config["vars"][use][0]
+                    else:
+                        self.INDECIES[use] += 1
+                        it = config["vars"][use][self.INDECIES[use]]
+                else:
+                    it = None
 
                 commands.append({
                     "command": item["command"].format(
-                        **self.context, **item,
+                        **self.context, **item, it=it,
                     ),
                     "show": show,
                     "period": period,
@@ -106,10 +120,11 @@ class Runner:
             prefix = prefix + " "
 
         if new_line:
+            text = f"[Server #{index}] {prefix}{text}\r"
             if self.NEEDS_NEW_LINE:
                 self.NEEDS_NEW_LINE = False
-                sys.stdout.write("\n")
-            print(f"[Server #{index}] {prefix}{text}\r")
+                text = "\n" + text
+            print(text)
         else:
             sys.stdout.write(f"\r[Server #{index}] {prefix}{text}\033[K")
             sys.stdout.flush()
