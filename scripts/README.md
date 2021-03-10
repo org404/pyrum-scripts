@@ -16,4 +16,4 @@ For that simply do:
 `./test.sh`
   
 If you want to open shell, you can uncomment last line in `test.sh` instead.
-Then inside the shell write `include test.sh`, it will be imported and executed immediatelly.
+Then inside the shell write `include test.rumor`, it will be imported and executed immediatelly.
