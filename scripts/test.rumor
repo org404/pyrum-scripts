@@ -3,11 +3,30 @@ set -e
 host start --identify=true
 host notify all
 host listen
-# host view
 peer connect $TADDRESS
-peer list
+
+#
+# TODO: try and add description if it affects anything explain
+#
+# gossip start
+#
+# fork_digest=${FORK_DIGEST}
+# fork_digest=${fork_digest#"0x"}
+# topic_name="beacon_block"
+# encoding="ssz_snappy"
+# blocks_topic="/eth2/$blocks_topic/$topic_name/$encoding"
+#
+# gossip join --topic=$blocks_topic
+# gossip list-peers $blocks_topic
+# gossip log $blocks_topic
+
+
+#
 # This fixes disconnection issue for Lighthouse (tested for 5 minutes).
+# Note: Although Lighthouse is still syncing during my test, so wrong fork digest
+# issue might be present here.
 # For Prysm it doesn't solve the problem though (??).
+#
 peer metadata serve $TID
 peer metadata poll --interval 5s --force-update $TID
 
@@ -24,3 +43,10 @@ peer metadata poll --interval 5s --force-update $TID
 #
 # peer status poll $TID
 
+#
+# TODO: find proper data / encode it
+#
+# while true; do
+#     rpc status req raw --raw --data "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007b00000000000000" --peer-id $TID
+#     sleep 5s
+# done
