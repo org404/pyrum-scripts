@@ -10,16 +10,13 @@ peer connect $TADDRESS
 #
 # gossip start
 #
-# fork_digest=${FORK_DIGEST}
-# fork_digest=${fork_digest#"0x"}
 # topic_name="beacon_block"
 # encoding="ssz_snappy"
-# blocks_topic="/eth2/$blocks_topic/$topic_name/$encoding"
+# blocks_topic="/eth2/$FORK_DIGEST_NO_PREFIX/$topic_name/$encoding"
 #
 # gossip join --topic=$blocks_topic
 # gossip list-peers $blocks_topic
 # gossip log $blocks_topic
-
 
 #
 # This fixes disconnection issue for Lighthouse (tested for 5 minutes).
@@ -39,14 +36,20 @@ peer metadata poll --interval 5s --force-update $TID
 # This breaks connection to Lighthouse and Prysm (??).
 # Error:
 #     beacon-chain[574514]: level=debug msg="Invalid status message from peer" error="wrong fork digest version" handler=status
-# Possible fix: manually set proper fork digest version.
+# Fix: manually set proper fork digest version.
 #
 # peer status poll $TID
 
 #
-# TODO: find proper data / encode it
+# This fixes disconnection issue by setting good value for $FORK_DIGEST
+# (consequently $FORK_DIGEST_NO_PREFIX) with the help of logging in
+# prysm synced node.
 #
-# while true; do
-#     rpc status req raw --raw --data "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007b00000000000000" --peer-id $TID
-#     sleep 5s
-# done
+while true; do
+    # TODO: find proper data / encode it
+    other_data="0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007b00000000000000"
+    rpc status req raw --raw --data "$FORK_DIGEST_NO_PREFIX$other_data" --peer-id $TID
+    # Verify connection still opened
+    peer list
+    sleep 5s
+done
