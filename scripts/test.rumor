@@ -72,6 +72,7 @@ status_loop_pid=$!  # remember pid of the loop in case we want to kill it
 # Fix: (??)
 #
 {
+while true; do
     #
     # The following data is a hexdump of the request below:
     #     req := BeaconBlocksByRangeRequest{
@@ -86,9 +87,25 @@ status_loop_pid=$!  # remember pid of the loop in case we want to kill it
     #       the problem is not in the ssz-encoding (hopefully!). But what *is*
     #       the problem then? @Important
     #                                                           - andrew, March 13 2021
-    #
+    # Data:
     req_data="73746172745f736c6f743a323020636f756e743a31323820737465703a3120"
-    # echo "Sending: \"$req_data\""
+    #
+    # The following data is a full message (ssz encoded) of the request above:
+    #     req_data="18ff060000734e61507059011c00004c22a311140000000000000080000000000000000100000000000000"
+    # Note:
+    #     Can't send this data right now, because "--compression none" flag breaks
+    #     everything. Seems like this flag changes url, so setting it to anything
+    #     but default removes "/ssz_snappy" prefix. Basically, what we would want
+    #     is to keep "/ssz_snappy" url suffix, but skip encoding function and try
+    #     sending this as a raw data. Not sure if it will fix anything though,
+    #     maybe issue is not in the encoding, but in the data itself.
+    #                                                           - andrew, March 14 2021
+    #
+    # [DEBUG]:
+    #     echo "Sending: \"$req_data\""
+    #
     rpc blocks-by-range req raw --raw --data "$req_data" --peer-id $TID
+    sleep 1s
+done
 }
 

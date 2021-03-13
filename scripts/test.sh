@@ -18,3 +18,4 @@ export FORK_DIGEST_NO_PREFIX=${FORK_DIGEST#"0x"}
 echo -e "$P2P_PUBLIC_IP - $TADDRESS - $TID - $FORK_DIGEST - $FORK_DIGEST_NO_PREFIX"
 # ./rumor file test.rumor
 ./rumor shell --level debug
+
