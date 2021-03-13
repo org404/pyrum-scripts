@@ -1,8 +1,22 @@
 set -e
 
+#
+# Note: This for-loop helps to create any amount of hosts we need, all the code
+#       inside is made to work immediatelly after uncommenting, EXCEPT you need
+#       to go to the bottom of the file and uncomment closing part of the loop.
+#       You can search for 'FOR LOOP END', if your editor supports it.
+#                                                            - andrew, March 14 2021
+# {  # FOR LOOP START
+# for i in {0..4}; do  # 'up to' number is inclusive (bash wtf?), so '0..4' creates 5 hosts.
+# This helps with the host names, avoiding collision
+hostname="hostname_${i:-0}"  # using 0 as a default (in case we commented out a main loop)
+# We have to do 'eval' here to use variable as a host name in a command.
+eval "$hostname: me"
+
+# Main code to start host and open listening port.
 host start --identify=true
 host notify all
-host listen
+host listen --tcp=900${i:-0}  # Using loop index as the least significant port digit to avoid collisions.
 peer connect $TADDRESS
 
 #
@@ -56,13 +70,15 @@ peer metadata poll --interval 5s --force-update $TID
 while true; do
     # TODO: find proper data / encode it
     other_data="0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007b00000000000000"
-    rpc status req raw --raw --data "$FORK_DIGEST_NO_PREFIX$other_data" --peer-id $TID
+    # We have to do 'eval' here to use variable as a host name in a command.
+    eval "$hostname: rpc status req raw --raw --data \"$FORK_DIGEST_NO_PREFIX$other_data\" --peer-id $TID"
     # [DEBUG] Verify connection still opened
     # peer list
     sleep 5s
 done
 } &  # hack to run block in the background, so we get control over shell despite infinite loop
-status_loop_pid=$!  # remember pid of the loop in case we want to kill it
+# We have to do 'eval' here to use variable as a host name in a command.
+eval "${hostname}_status_loop_pid=$!"  # remember pid of the loop in case we want to kill it
 
 #
 # This *should* work now, we are fully connected, and Prysm node thinks we
@@ -70,6 +86,14 @@ status_loop_pid=$!  # remember pid of the loop in case we want to kill it
 # Error:
 #    beacon-chain[592354]: level=debug msg="Could not decode stream message" error="incorrect size"
 # Fix: (??)
+#
+
+# Uncomment commands below when enabling for-loop in the beginning!
+# done
+# }  # FOR LOOP END
+
+#
+# TODO: This is not yet made to support multiple clients (not working yet, so keep simpler).
 #
 {
 while true; do
