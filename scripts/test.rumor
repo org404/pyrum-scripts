@@ -8,6 +8,11 @@ peer connect $TADDRESS
 #
 # TODO: try and add description if it affects anything explain
 #
+# Note: this doesn't seem to work, topic seems to be correct (or at least
+#       what prysm would expect), but can't see prysm node id here, when
+#       connected. Not sure what to make of it right now.
+#                                                      - andrew, March 13 2021
+#
 # gossip start
 #
 # topic_name="beacon_block"
@@ -17,39 +22,73 @@ peer connect $TADDRESS
 # gossip join --topic=$blocks_topic
 # gossip list-peers $blocks_topic
 # gossip log $blocks_topic
+#
 
 #
-# This fixes disconnection issue for Lighthouse (tested for 5 minutes).
-# Note: Although Lighthouse is still syncing during my test, so wrong fork digest
-# issue might be present here.
-# For Prysm it doesn't solve the problem though (??).
+# Note: This fixes disconnection issue for Lighthouse (tested for 5 minutes).
+#       Although Lighthouse is still syncing during my test, so wrong fork
+#       digest issue might be present here. For Prysm it doesn't solve the
+#       problem though, see solution below.
+#                                                          - andrew, March 13 2021
 #
 peer metadata serve $TID
 peer metadata poll --interval 5s --force-update $TID
 
 #
-# This breaks connection to Prysm (??). On Lighthouse doesn't seem to affect anything.
+# This breaks connection to Prysm (??). On Lighthouse doesn't seem to affect anything (??).
 #
 # peer status serve $TID
 
 #
-# This breaks connection to Lighthouse and Prysm (??).
+# This breaks connection to Lighthouse and Prysm.
 # Error:
 #     beacon-chain[574514]: level=debug msg="Invalid status message from peer" error="wrong fork digest version" handler=status
-# Fix: manually set proper fork digest version.
+# Fix: manually set proper fork digest version, see solution below.
 #
 # peer status poll $TID
 
 #
 # This fixes disconnection issue by setting good value for $FORK_DIGEST
-# (consequently $FORK_DIGEST_NO_PREFIX) with the help of logging in
-# prysm synced node.
+# (consequently $FORK_DIGEST_NO_PREFIX, which is fork digest without '0x')
+# taken from prysm synced node with simple log.Debug().
 #
+{
 while true; do
     # TODO: find proper data / encode it
     other_data="0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007b00000000000000"
     rpc status req raw --raw --data "$FORK_DIGEST_NO_PREFIX$other_data" --peer-id $TID
-    # Verify connection still opened
-    peer list
+    # [DEBUG] Verify connection still opened
+    # peer list
     sleep 5s
 done
+} &  # hack to run block in the background, so we get control over shell despite infinite loop
+status_loop_pid=$!  # remember pid of the loop in case we want to kill it
+
+#
+# This *should* work now, we are fully connected, and Prysm node thinks we
+# are a valid peer (taken a slot, without any forced disconnect).
+# Error:
+#    beacon-chain[592354]: level=debug msg="Could not decode stream message" error="incorrect size"
+# Fix: (??)
+#
+{
+    #
+    # The following data is a hexdump of the request below:
+    #     req := BeaconBlocksByRangeRequest{
+    #         StartSlot: types.Slot(20),
+    #         Count: 128,
+    #         Step: 1
+    #     }
+    # To log (for example, from inside of Prysm) used the following code:
+    #     log.Debugf("BbyR: \"%x\", req)
+    #
+    # Note: rumor expects "Raw uncompressed hex-encoded request data", which means
+    #       the problem is not in the ssz-encoding (hopefully!). But what *is*
+    #       the problem then? @Important
+    #                                                           - andrew, March 13 2021
+    #
+    req_data="73746172745f736c6f743a323020636f756e743a31323820737465703a3120"
+    # echo "Sending: \"$req_data\""
+    rpc blocks-by-range req raw --raw --data "$req_data" --peer-id $TID
+}
+
