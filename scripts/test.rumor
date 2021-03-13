@@ -1,15 +1,16 @@
 set -e
 
 #
-# Note: This for-loop helps to create any amount of hosts we need, all the code
-#       inside is made to work immediatelly after uncommenting, EXCEPT you need
-#       to go to the bottom of the file and uncomment closing part of the loop.
-#       You can search for 'FOR LOOP END', if your editor supports it.
-#                                                            - andrew, March 14 2021
+# Note:
+#     This for-loop helps to create any amount of hosts we need, all the code
+#     inside is made to work immediatelly after uncommenting, EXCEPT you need
+#     to go to the bottom of the file and uncomment closing part of the loop.
+#     You can search for 'FOR LOOP END', if your editor supports it.
+#                                                          - andrew, March 14 2021
 # {  # FOR LOOP START
-# for i in {0..4}; do  # 'up to' number is inclusive (bash wtf?), so '0..4' creates 5 hosts.
-# This helps with the host names, avoiding collision
-hostname="hostname_${i:-0}"  # using 0 as a default (in case we commented out a main loop)
+# for i in {0..4}; do  # Second number is inclusive (bash wtf?), so '0..4' creates 5 hosts.
+# This helps with the host names, avoiding collision.
+hostname="hostname_${i:-0}"  # Using 0 as a default (in case we commented out a main loop).
 # We have to do 'eval' here to use variable as a host name in a command.
 eval "$hostname: me"
 
@@ -20,12 +21,13 @@ host listen --tcp=900${i:-0}  # Using loop index as the least significant port d
 peer connect $TADDRESS
 
 #
-# TODO: try and add description if it affects anything explain
+# TODO: Try and add description if it affects anything explain.
 #
-# Note: this doesn't seem to work, topic seems to be correct (or at least
-#       what prysm would expect), but can't see prysm node id here, when
-#       connected. Not sure what to make of it right now.
-#                                                      - andrew, March 13 2021
+# Note:
+#     This doesn't seem to work, topic seems to be correct (or at least
+#     what prysm would expect), but can't see prysm node id here, when
+#     connected. Not sure what to make of it right now.
+#                                                    - andrew, March 13 2021
 #
 # gossip start
 #
@@ -39,11 +41,12 @@ peer connect $TADDRESS
 #
 
 #
-# Note: This fixes disconnection issue for Lighthouse (tested for 5 minutes).
-#       Although Lighthouse is still syncing during my test, so wrong fork
-#       digest issue might be present here. For Prysm it doesn't solve the
-#       problem though, see solution below.
-#                                                          - andrew, March 13 2021
+# Note:
+#     This fixes disconnection issue for Lighthouse (tested for 5 minutes).
+#     Although Lighthouse is still syncing during my test, so wrong fork
+#     digest issue might be present here. For Prysm it doesn't solve the
+#     problem though, see solution below.
+#                                                        - andrew, March 13 2021
 #
 peer metadata serve $TID
 peer metadata poll --interval 5s --force-update $TID
@@ -57,43 +60,38 @@ peer metadata poll --interval 5s --force-update $TID
 # This breaks connection to Lighthouse and Prysm.
 # Error:
 #     beacon-chain[574514]: level=debug msg="Invalid status message from peer" error="wrong fork digest version" handler=status
-# Fix: manually set proper fork digest version, see solution below.
+# Fix: Manually set proper fork digest version, see solution below.
 #
 # peer status poll $TID
 
 #
 # This fixes disconnection issue by setting good value for $FORK_DIGEST
 # (consequently $FORK_DIGEST_NO_PREFIX, which is fork digest without '0x')
-# taken from prysm synced node with simple log.Debug().
+# taken from prysm synced node with simple 'log.Debug(forkDigest)'.
 #
 {
 while true; do
-    # TODO: find proper data / encode it
+    # TODO: Find proper data / encode it.
     other_data="0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007b00000000000000"
     # We have to do 'eval' here to use variable as a host name in a command.
     eval "$hostname: rpc status req raw --raw --data \"$FORK_DIGEST_NO_PREFIX$other_data\" --peer-id $TID"
-    # [DEBUG] Verify connection still opened
+    # [DEBUG] Verify connection still opened.
     # peer list
     sleep 5s
 done
-} &  # hack to run block in the background, so we get control over shell despite infinite loop
+} &  # A hack to run block in the background, so we get control over shell despite infinite loop.
 # We have to do 'eval' here to use variable as a host name in a command.
-eval "${hostname}_status_loop_pid=$!"  # remember pid of the loop in case we want to kill it
-
-#
-# This *should* work now, we are fully connected, and Prysm node thinks we
-# are a valid peer (taken a slot, without any forced disconnect).
-# Error:
-#    beacon-chain[592354]: level=debug msg="Could not decode stream message" error="incorrect size"
-# Fix: (??)
-#
+eval "${hostname}_status_loop_pid=$!"  # Remember pid of the loop in case we'll want to kill it.
 
 # Uncomment commands below when enabling for-loop in the beginning!
 # done
 # }  # FOR LOOP END
 
 #
-# TODO: This is not yet made to support multiple clients (not working yet, so keep simpler).
+# TODO: The code below does not support multiple clients yet (not working, so keep simpler).
+# Error:
+#    beacon-chain[592354]: level=debug msg="Could not decode stream message" error="incorrect size"
+# Fix: Find what additional data is needed or what's wrong (??).
 #
 {
 while true; do
@@ -107,23 +105,24 @@ while true; do
     # To log (for example, from inside of Prysm) used the following code:
     #     log.Debugf("BbyR: \"%x\", req)
     #
-    # Note: rumor expects "Raw uncompressed hex-encoded request data", which means
-    #       the problem is not in the ssz-encoding (hopefully!). But what *is*
-    #       the problem then? @Important
-    #                                                           - andrew, March 13 2021
+    # Note:  @Important @RemoveWhenFixed
+    #     Rumor expects "Raw uncompressed hex-encoded request data", which means
+    #     the problem is not in the ssz-encoding (hopefully!). But what *is*
+    #     the problem then?
+    #                                                         - andrew, March 13 2021
     # Data:
     req_data="73746172745f736c6f743a323020636f756e743a31323820737465703a3120"
     #
     # The following data is a full message (ssz encoded) of the request above:
     #     req_data="18ff060000734e61507059011c00004c22a311140000000000000080000000000000000100000000000000"
-    # Note:
+    # Note:  @RemoveWhenFixed
     #     Can't send this data right now, because "--compression none" flag breaks
     #     everything. Seems like this flag changes url, so setting it to anything
-    #     but default removes "/ssz_snappy" prefix. Basically, what we would want
-    #     is to keep "/ssz_snappy" url suffix, but skip encoding function and try
-    #     sending this as a raw data. Not sure if it will fix anything though,
+    #     but default removes "/ssz_snappy" suffix. Basically, what we would want
+    #     to test is: keep "/ssz_snappy" url suffix, but skip encoding function and
+    #     try sending this as a raw data. Not sure if it will fix anything though,
     #     maybe issue is not in the encoding, but in the data itself.
-    #                                                           - andrew, March 14 2021
+    #                                                            - andrew, March 14 2021
     #
     # [DEBUG]:
     #     echo "Sending: \"$req_data\""
