@@ -128,7 +128,7 @@ while true; do
     #     echo "Sending: \"$req_data\""
     #
     rpc blocks-by-range req raw --raw --data "$req_data" --peer-id $TID
-    sleep 1s
+    sleep 100ms
 done
 }
 
