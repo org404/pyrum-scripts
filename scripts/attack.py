@@ -23,7 +23,7 @@ VPN_COMMANDS = (
    r"export NEW_WG=$(ls /etc/wireguard/ | shuf -n 1 | sed 's/\(.*\)\..*/\1/')",
     "mkdir -p /tmp/mullvad_config",
     "cp /etc/wireguard/$NEW_WG.conf /tmp/mullvad_config/wg0.conf",
-   f"docker run -d \
+    "docker run -d \
         --privileged \
         --name={name} \
         --cap-add=NET_ADMIN \
