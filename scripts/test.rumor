@@ -84,13 +84,13 @@ done
 eval "${hostname}_status_loop_pid=$!"  # Remember pid of the loop in case we'll want to kill it.
 
 # For spam testing
-{
-while true; do
-    req_data="73746172745f736c6f743a323020636f756e743a31323820737465703a3120"
-    eval "$hostname: rpc blocks-by-range req raw --raw --data \"$req_data\" --peer-id $TID"
-    sleep 1ms
-done
-} &
+# {
+# while true; do
+#     req_data="73746172745f736c6f743a323020636f756e743a31323820737465703a3120"
+#     eval "$hostname: rpc blocks-by-range req raw --raw --data \"$req_data\" --peer-id $TID"
+#     sleep 1ms
+# done
+# } &
 
 # Uncomment commands below when enabling for-loop in the beginning!
 done
