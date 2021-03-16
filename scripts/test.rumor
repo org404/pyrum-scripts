@@ -141,3 +141,7 @@ done
 # done
 # }
 
+# This code must be here just to keep everything alive and running
+while true; do
+    sleep 10s
+done
