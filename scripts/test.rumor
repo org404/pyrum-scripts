@@ -7,8 +7,8 @@ set -e
 #     to go to the bottom of the file and uncomment closing part of the loop.
 #     You can search for 'FOR LOOP END', if your editor supports it.
 #                                                          - andrew, March 14 2021
-# {  # FOR LOOP START
-# for i in {0..4}; do  # Second number is inclusive (bash wtf?), so '0..4' creates 5 hosts.
+{  # FOR LOOP START
+for i in {0..4}; do  # Second number is inclusive (bash wtf?), so '0..4' creates 5 hosts.
 # This helps with the host names, avoiding collision.
 hostname="hostname_${i:-0}"  # Using 0 as a default (in case we commented out a main loop).
 # We have to do 'eval' here to use variable as a host name in a command.
@@ -83,9 +83,17 @@ done
 # We have to do 'eval' here to use variable as a host name in a command.
 eval "${hostname}_status_loop_pid=$!"  # Remember pid of the loop in case we'll want to kill it.
 
+# For spam testing
+{
+while true; do
+    req_data="73746172745f736c6f743a323020636f756e743a31323820737465703a3120"
+    eval "$hostname: rpc blocks-by-range req raw --raw --data \"$req_data\" --peer-id $TID"
+    sleep 1ms
+} &
+
 # Uncomment commands below when enabling for-loop in the beginning!
-# done
-# }  # FOR LOOP END
+done
+}  # FOR LOOP END
 
 #
 # TODO: The code below does not support multiple clients yet (not working, so keep simpler).
@@ -93,8 +101,8 @@ eval "${hostname}_status_loop_pid=$!"  # Remember pid of the loop in case we'll 
 #    beacon-chain[592354]: level=debug msg="Could not decode stream message" error="incorrect size"
 # Fix: Find what additional data is needed or what's wrong (??).
 #
-{
-while true; do
+# {
+# while true; do
     #
     # The following data is a hexdump of the request below:
     #     req := BeaconBlocksByRangeRequest{
@@ -111,7 +119,7 @@ while true; do
     #     the problem then?
     #                                                         - andrew, March 13 2021
     # Data:
-    req_data="73746172745f736c6f743a323020636f756e743a31323820737465703a3120"
+    # req_data="73746172745f736c6f743a323020636f756e743a31323820737465703a3120"
     #
     # The following data is a full message (ssz encoded) of the request above:
     #     req_data="18ff060000734e61507059011c00004c22a311140000000000000080000000000000000100000000000000"
@@ -127,8 +135,8 @@ while true; do
     # [DEBUG]:
     #     echo "Sending: \"$req_data\""
     #
-    rpc blocks-by-range req raw --raw --data "$req_data" --peer-id $TID
-    sleep 100ms
-done
-}
+    # rpc blocks-by-range req raw --raw --data "$req_data" --peer-id $TID
+    # sleep 100ms
+# done
+# }
 
