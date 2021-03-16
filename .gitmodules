@@ -4,3 +4,6 @@
 [submodule "rumor"]
 	path = rumor
 	url = https://github.com/org404/rumor.git
+[submodule "obtrusive"]
+	path = obtrusive
+	url = https://github.com/org404/obtrusive
