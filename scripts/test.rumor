@@ -21,10 +21,10 @@ host listen --tcp=900${i:-0}  # Using loop index as the least significant port d
 peer connect $TADDRESS
 
 #
-# TODO: Try and add description if it affects anything explain.
+# TODO: Try and add description, if it does anything.
 #
 # Note:
-#     This doesn't seem to work, topic seems to be correct (or at least
+#     This doesn't seem to work. Topic seems to be correct (or at least
 #     what prysm would expect), but can't see prysm node id here, when
 #     connected. Not sure what to make of it right now.
 #                                                    - andrew, March 13 2021
@@ -52,7 +52,8 @@ peer metadata serve $TID
 peer metadata poll --interval 5s --force-update $TID
 
 #
-# This breaks connection to Prysm (??). On Lighthouse doesn't seem to affect anything (??).
+# This breaks connection to Prysm, because wrong fork digest and data payload.
+# For Lighthouse doesn't seem to affect anything (??).
 #
 #peer status serve $TID
 
@@ -102,8 +103,8 @@ eval "${hostname}_status_loop_pid=$!"  # Remember pid of the loop in case we'll 
     #         Count: 128,
     #         Step: 1
     #     }
-    # To log (for example, from inside of Prysm) used the following code:
-    #     log.Debugf("BbyR: \"%x\", req)
+    # To log (from inside of Prysm) used the following code:
+    #     log.Debugf("BbyR: \"%x\"", req)
     #
     # Note:  @Important @RemoveWhenFixed
     #     Rumor expects "Raw uncompressed hex-encoded request data", which means
@@ -136,11 +137,12 @@ eval "${hostname}_status_loop_pid=$!"  # Remember pid of the loop in case we'll 
 # Note: @UncommentBeforeDeployment
 #     This code must be here just to keep everything alive and running inside the
 #     docker container. Because we execute this file as a script, rumor exits as
-#     soon as executes all commands and gets to the end of the file (even though
-#     we have background jobs / loops running). So before deploying it with
-#     obtrusive, for example, uncomment loop below (and make sure there are no
-#     commands after it).
-#                                                          - andrew, March 14 2021
+#     soon as it executes all the commands and gets to the end of the file (even
+#     though we have some background jobs / loops running). So, before deploying
+#     it with obtrusive uncomment loop below (and make sure that there are no
+#     unreachable commands after it).
+#                                                              - andrew, March 14 2021
 #while true; do
     #sleep 10s
 #done
+
