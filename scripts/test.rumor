@@ -78,6 +78,20 @@ while true; do
     eval "$hostname: rpc status req raw --raw --data \"$FORK_DIGEST_NO_PREFIX$other_data\" --peer-id $TID"
     # [DEBUG] Verify connection still opened.
     # peer list
+
+    #
+    # Note:
+    #     Maybe I'm doing something wrong, but there are these two "info" messages
+    #     on each sleep, before and after. And I hate it wholeheartedly. We need
+    #     this sleep here to behave like a reasonable node with frequent but not
+    #     spammy status requests. I'm not sure why creator decided to put messages
+    #     from 'sleep' into 'info' catergory of logging, but issue I've encountered
+    #     is that output from the 'help' command is also 'info'. So you either get
+    #     your interactive shell spammed with useless info. Or you set logging to
+    #     at least 'warn', and give up your ability to read any output of any 'help'
+    #     (sub)command, or any other useful information for that matter..
+    #                                                             - andrew, March 22 2021
+    #
     sleep 5s
 done
 } &  # A hack to run block in the background, so we get control over shell despite infinite loop.
