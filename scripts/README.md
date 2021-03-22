@@ -1,3 +1,6 @@
+### Instructions
+In this example we will open rumor shell, load our attack script, creating one attack client and establishing/keeping connection to hardcoded target (our test instance).
+
 ### How to run
 ##### 1. Install Rumor
 You can follow installation instructions in the `rumor` submodule, but in my case it didn't work so I just built it:

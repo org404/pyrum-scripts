@@ -1,5 +1,5 @@
 # Description
-This example let's you spin up listening rumor server (extremely light - 26MB) with p2p protocol and dv5 support. In this example we will open rumor shell, load our attack script, creating one attack client and establishing/keeping connection to hardcoded target (our test instance).
+This repo is an organizational repo for rumor (extremely light scripting client with p2p protocol and dv5 support), obtrusive module and more.  
 
 ### Pre-requirements
 Must have:  
