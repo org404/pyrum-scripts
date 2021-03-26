@@ -76,6 +76,8 @@ while true; do
     other_data="0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007b00000000000000"
     # We have to do 'eval' here to use variable as a host name in a command.
     eval "$hostname: rpc status req raw --raw --data \"$FORK_DIGEST_NO_PREFIX$other_data\" --peer-id $TID"
+    # Step through request to discard it, so logs are not spammed after finishing program.
+    next; next;
     # [DEBUG] Verify connection still opened.
     # peer list
 
