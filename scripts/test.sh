@@ -17,5 +17,13 @@ export FORK_DIGEST_NO_PREFIX=${FORK_DIGEST#"0x"}
 # General info
 echo -e "$P2P_PUBLIC_IP - $TADDRESS - $TID - $FORK_DIGEST - $FORK_DIGEST_NO_PREFIX"
 # ./rumor file test.rumor
-./rumor shell --level debug
+# ./rumor shell --level info
 
+docker run -it --rm \
+    --name running-rumor-test \
+    -e TADDRESS=$TADDRESS -e TID=$TID \
+    -e FORK_DIGEST=$FORK_DIGEST \
+    -e FORK_DIGEST_NO_PREFIX=$FORK_DIGEST_NO_PREFIX \
+    -v $PWD/test.rumor:/test.rumor:rw \
+    --network=host \
+    rumor-custom shell --level info
