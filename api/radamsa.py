@@ -8,7 +8,7 @@ import json
 ADDR = "localhost"
 PORT = 3500
 URL  = f"http://{ADDR}:{PORT}/eth/v1alpha1/validator/block"
-SOURCE_FILE = "data/test.json"
+SOURCE_FILE = "data/block.json"
 
 all_data = list()
 
@@ -32,7 +32,7 @@ async def make_request(index, session):
 
 async def main():
     index = 0
-    while index < 100:
+    while index < 10:
         async with aiohttp.ClientSession() as session:
             res = await asyncio.gather( *(make_request(i, session) for i in range(500)) )
 
