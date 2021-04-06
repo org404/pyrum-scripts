@@ -10,6 +10,10 @@ URL = f"http://{ADDR}:{PORT}/eth/v1alpha1/validator/block"
 
 async def make_request(index, session):
     # So there is a bug(?) in current API that causes error below (no client crash):
+    # EDIT:
+    #     The following seems to be a general reaction of prysm to data not being parsed
+    #     properly, so seems like it panics always if json parser fail or data does not
+    #     match expected structures.
     #
     # Error:
     #     level=error msg="gRPC panicked!" error="runtime error: invalid memory address or nil pointer dereference"
