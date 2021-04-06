@@ -16,7 +16,7 @@ def handle_str(value: str):
         v = value[2:]
         b = bytes.fromhex(v)
         e = base64.b64encode(b)
-        # we decode raw byte-string into normal string of bytes, because python's json can't handle raw bytes.
+        # We decode raw byte-string into normal string of bytes, because python's json can't handle raw bytes.
         assert str(e) == f"b'{e.decode()}'"
         return e.decode()
     else:
@@ -39,12 +39,12 @@ def base64encode(obj):
                 elif isinstance(list_item, int):
                     obj[key] = str(list_item)
                 elif isinstance(list_item, dict):
-                    # Recutsive case if dictionary
+                    # Recursive case if dictionary
                     base64encode(list_item)
                 else:
                     raise NotImplementedError(f"List loop: object '{list_item}' of type '{type(list_item)}'.")
         elif isinstance(item, dict):
-            # Recutsive case if dictionary
+            # Recursive case if dictionary
             base64encode(item)
         else:
             raise NotImplementedError(f"General loop: object '{item}' of type '{type(item)}'.")
@@ -52,17 +52,16 @@ def base64encode(obj):
 
 with open("data/block.json") as f:
     block = json.load(f)
+    # If you comment this out, it says encoding to base64 is required.
     base64encode(block)
-    # pprint(block)
-    # with open("data/block_base64.json", "w+") as t:
-    #     json.dump(block, t, indent=4)
-    # exit(1)
 
 
 async def make_request(index, session):
+    #
     # Issue: properly base64 encoded bytes data still breaks everything
     # and causes 'gRPC panic':
-    #     'error': 'runtime error: invalid memory address or nil pointer dereference'
+    #     'error': 'runtime error: invalid memory address or nil pointer dereference
+    pprint(block)
     async with session.post(URL, json=block, timeout=20) as resp:
         d = await resp.json()
         logging.debug("Request #%s: %s", index, d)

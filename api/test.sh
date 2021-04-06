@@ -23,5 +23,5 @@ TEST_ID="16Uiu2HAkxuYmv2jZTCvvrvVkByPsGgTGRScKT15cvogf1qRbWoDd"
 #curl -w "\n" -sX POST -d @data/block2.json -H "accept: application/json" http://$ADDR:$PORT/eth/v1alpha1/validator/block | json_pp
 
 #curl -w "\n" -sX POST -d @data/block2.json -H "accept: application/json" http://$ADDR:$PORT/eth/v1alpha1/beacon/attestations/pool
-curl -w "\n" -s -H "accept: application/json" http://$ADDR:$PORT/eth/v1alpha1/beacon/attestations/pool
+curl -w "\n" -s -H "accept: application/json" http://$ADDR:$PORT/eth/v1alpha1/beacon/attestations/pool | json_pp
 
