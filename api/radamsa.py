@@ -15,6 +15,7 @@ SOURCE_FILE = "data/test.json"
 ADDR = "localhost"
 PORT = 3500
 URL  = f"http://{ADDR}:{PORT}/eth/v1alpha1/validator/block"
+# You can use values like 1000 and 100 (accordingly) here and it will remain decently fast.
 AMOUNT = 50
 LOOPS  = 10
 TMP_FOLDER = "/tmp/tmp-{folder}"
