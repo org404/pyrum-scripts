@@ -7,6 +7,9 @@
 #    the machine!
 #                                               - andrew, April 7 2021
 #
+# Reference to the issue page:
+#     https://mnfld.atlassian.net/wiki/spaces/MNFLD/pages/139755631/Prysm+API+error+2
+#
 ADDR=localhost
 PORT=3500
 
