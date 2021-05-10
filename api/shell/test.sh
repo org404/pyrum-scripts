@@ -24,3 +24,18 @@ ADDR=localhost
 
 # curl -w "\n" -s -H "accept: application/json" http://$ADDR:$PORT/eth/v1alpha1/beacon/attestations/pool | json_pp
 
+# Unavailable until fully synced.
+#curl -w "\n" -s -H "accept: application/json" http://$ADDR:$PORT/eth/v1alpha1/validator/duties | json_pp
+# Unavailable until fully synced.
+#curl -w "\n" -s -H "accept: application/json" http://$ADDR:$PORT/eth/v1alpha1/validator/duties/stream | json_pp
+# Nothing to pass here.. Works as is.
+#curl -w "\n" -s -H "accept: application/json" http://$ADDR:$PORT/eth/v1alpha1/validator/domain | json_pp
+# Nothing to pass here.. Works as is.
+#curl -w "\n" -s -H "accept: application/json" http://$ADDR:$PORT/eth/v1alpha1/validator/chainstart/stream | json_pp
+# Nothing to pass here.. Works as is.
+# curl -w "\n" -s -H "accept: application/json" http://$ADDR:$PORT/eth/v1alpha1/validator/activation/stream | json_pp
+
+#curl -w "\n" -s -H "accept: application/json" http://$ADDR:$PORT/eth/v1alpha1/validator/attestation | json_pp
+
+curl -w "\n" -s -H "accept: application/json" http://$ADDR:$PORT/eth/v1alpha1/beacon/blocks?epoch=b'9223372036854774770%5Cn' | json_pp
+
