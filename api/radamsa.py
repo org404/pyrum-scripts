@@ -197,6 +197,10 @@ async def fuzzing_routine(method: str, base_url: str, url_path: str, source_path
             if item.get("status") == 200:
                 continue
 
+            # For now limit stored requests to only ones containing "error". The problem here is that we fuzz a lot, so we need to come up with a better policy for storing errors.
+            if "error" in item["message"]:  # @TemporarySolution
+                continue
+
             # Then, we delete useless/empty data before sending it.
             assert item["details"] != ""
             del item["details"]  # always empty
@@ -210,8 +214,12 @@ async def fuzzing_routine(method: str, base_url: str, url_path: str, source_path
 
             # Saving modified object.
             array_to_send.append(item)
-            # We cannot do this during 
+            # Note: This will exhaust all RAM very quickly, so use it only for debugging with very low values of 'AMOUNT' and 'LOOPS'.
             if DEBUG:  analitics.append(item)
+
+        # Do not spam Voyeur API with empty requests.
+        if not array_to_send:
+            continue
 
         # Here we are actually sending data to voyeur.
         async with aiohttp.ClientSession(headers={"Content-Type": "application/json", "X-Namespace": "radamsa fuzzing"}) as session:
