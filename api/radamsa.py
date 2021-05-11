@@ -51,7 +51,7 @@ Result = namedtuple("Result", "path, counter")
 async def generate_payload(ctx):
     tmp_fp  = os.path.join(ctx["tmp_folder"], ctx["tmp_fn"] % "%n")
     command = f"cat {ctx['source']} | radamsa --seed {ctx['seed']} -n {ctx['amount']} -o {tmp_fp}"
-    logging.debug("Using command: '%s'", command)
+    logging.debug("Using command: '%s'", command, extra=ctx)
     proc = await asyncio.create_subprocess_shell(
         command,
         stdout=asyncio.subprocess.PIPE,
@@ -82,15 +82,15 @@ async def read_payload(index, ctx):
     #     fail silently.
     #                                           - andrew, April 7 2021
     except FileNotFoundError:
-        logging.debug("Failed to read file for request #%s, using default value ...", index + 1)
+        logging.debug("Failed to read file for request #%s, using default value ...", index + 1, extra=ctx)
         ctx["failed_to_create"] += 1
         return b""
 
 
-async def make_request(index, session, method, ctx):
+async def make_request(index, session, ctx):
     payload = await read_payload(index, ctx)
 
-    if method == "POST":
+    if ctx["method"] == "POST":
         async with session.post(ctx["url"], data=payload, timeout=20) as resp:
             if resp.status == 200:
                 d = {"status": 200}
@@ -103,12 +103,12 @@ async def make_request(index, session, method, ctx):
         # We should not send this data (for continuous fuzzing it's too large), instead, we just store the seed.
         #d["payload"] = payload
 
-    elif method == "GET":
+    elif ctx["method"] == "GET":
         # Eh, python.. We need this hack to put fuzzer output from bytes into the url.
         try:
             payload = str(payload)[2:-1]
         except Exception as e:
-            logging.debug("Decoding fuzzer output error: %s ...", e)
+            logging.debug("Decoding fuzzer output error: %s ...", e, extra=ctx)
             payload = 0
 
         async with session.get(ctx["url"].format(generated=payload), timeout=20) as resp:
@@ -142,53 +142,38 @@ async def fuzzing_routine(method: str, base_url: str, url_path: str, source_path
     url = base_url + url_path
 
     analitics = list()
-    logging.info("Generated random seed: %s ...", seed)
+    logging.info("Generated random seed: %s ...", seed, extra={"method": method})
     index = 0
     while index < n_loops:
-        logging.info("Used seed: %s ...", seed)
-        context = {
-            "base_index": index * n_requests,
-            "seed": seed,
-            "source": source_path,
-            "url": url,
-            "amount": n_requests,
-            "tmp_folder": mkdtemp(),
-            "tmp_fn": TMP_FN,
-            "failed_to_create": 0,
-        }
+        logging.info("Used seed: %s ...", seed, extra={"method": method})
         try:
+            context = {
+                "method":     method,
+                "base_index": index * n_requests,
+                "seed":       seed,
+                "source":     source_path,
+                "url":        url,
+                "amount":     n_requests,
+                "tmp_folder": mkdtemp(),  # Here we atomically create tmp dir, which must be deleted later.
+                "tmp_fn":     TMP_FN,
+                "failed_to_create": 0,
+            }
             payload = await generate_payload(context)
             seed += 1
 
             start_t = time.time()
             async with aiohttp.ClientSession() as session:
-                res = await asyncio.gather( *(make_request(index=i, session=session, method=method, ctx=context) for i in range(n_requests)))
+                res = await asyncio.gather( *(make_request(index=i, session=session, ctx=context) for i in range(n_requests)))
         finally:
             shutil.rmtree(context["tmp_folder"])
 
         delta = time.time() - start_t
         logging.info(
             f"Loop %{len(str(AMOUNT))}s done! Ran %s requests (at rate %.2f/second). Created files: %s/%s ...",
-            index, len(res), round(len(res) / delta, 2), n_requests - context["failed_to_create"], n_requests,
+            index, len(res), round(len(res) / delta, 2), n_requests - context["failed_to_create"], n_requests, extra=context,
         )
         index += 1
-        #
-        # Note:
-        #     We could save data and then analyze it later, but the problem
-        #     is it takes too much memory to store huge amount of requests.
-        #     Much better for us to run the script with some seed, so then
-        #     we will have an ability to replay the request data, and if we
-        #     find something interesting and want to replay it. So for now
-        #     just extract errors and prettify the output, as below.
-        #                                                  - andrew, April 7 2021
-        # Initial idea (too much memory):
-        #     with open("data/output.json", "w+") as f:
-        #         json.dump(all_data, f, indent=4)
-        #
-        # Current solution:
-        #     We are using this script as a show-case for voyeur, the service
-        #     which can be used for logs visualization and analysis.
-        #
+
         array_to_send = list()
         for i in range(len(res)):
             item = res[i]
@@ -221,12 +206,31 @@ async def fuzzing_routine(method: str, base_url: str, url_path: str, source_path
         if not array_to_send:
             continue
 
-        # Here we are actually sending data to voyeur.
+        #
+        # Note:
+        #     We could save data and then analyze it later, but the problem
+        #     is it takes too much memory to store huge amount of requests.
+        #     Much better for us to run the script with some seed, so then
+        #     we will have an ability to replay the request data, and if we
+        #     find something interesting and want to replay it. So for now
+        #     just extract errors and prettify the output, as below.
+        #                                                  - andrew, April 7 2021
+        # Initial idea (too much memory):
+        #     with open("data/output.json", "w+") as f:
+        #         json.dump(all_data, f, indent=4)
+        #
+        # Current solution:
+        #     We are using this script as a show-case for voyeur, the service
+        #     which can be used for logs storage, visualization and analysis.
+        #
         async with aiohttp.ClientSession(headers={"Content-Type": "application/json", "X-Namespace": "radamsa fuzzing"}) as session:
             # Sending the whole list (you can alternatively send one by one).
             async with session.post(VOYEUR_URL, json = array_to_send, timeout = 5) as resp:
                 r = await resp.json()
-                logging.info("Sent %s entries to voyeur, status: %s ...", len(array_to_send), r["code"])
+                logging.info(
+                    "Sent %s entries to voyeur, status: %s ...",
+                    len(array_to_send), r["code"], extra=context,
+                )
 
     # In the end just group all results by error type and show count.
     if DEBUG:
@@ -284,10 +288,23 @@ async def main():
 
 if __name__ == "__main__":
     # Logging setup.
-    logging.basicConfig(format="%(asctime)s\t%(levelname)s:\t%(message)s")
+    logging.basicConfig(
+        format = "%(asctime)s\t%(levelname)s:\t%(method)-5s\t%(message)s",
+        level  = logging.INFO if not DEBUG else logging.DEBUG,
+    )
+
+    class CtxFormatter(logging.Formatter):
+        def format(self, record):
+            if not hasattr(record, "method"):
+                record.method = "EMPTY"
+            return super(CtxFormatter, self).format(record)
+
     logger = logging.getLogger()
-    level = logging.INFO if not DEBUG else logging.DEBUG
-    logger.setLevel(level)
+    for handler in logger.root.handlers:
+        # This is lazy and does only the minimum alteration necessary. It'd be better to use
+        # dictConfig / fileConfig to specify the full desired configuration from the start:
+        # http://docs.python.org/2/library/logging.config.html#dictionary-schema-details
+        handler.setFormatter(CtxFormatter(handler.formatter._fmt))
 
     asyncio.run(main())
 
