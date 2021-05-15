@@ -37,5 +37,6 @@ ADDR=localhost
 
 #curl -w "\n" -s -H "accept: application/json" http://$ADDR:$PORT/eth/v1alpha1/validator/attestation | json_pp
 
-curl -w "\n" -s -H "accept: application/json" http://$ADDR:$PORT/eth/v1alpha1/beacon/blocks?epoch=b'9223372036854774770%5Cn' | json_pp
+curl -w "\n" -sX POST -H "accept: application/json" http://$ADDR:$PORT/eth/v1alpha1/validator/block | json_pp
+seq 1 100000 | xargs -I $ -n1 -P200 curl -sX POST -H "accept: application/json" http://$ADDR:$PORT/eth/v1alpha1/validator/block > /dev/null
 

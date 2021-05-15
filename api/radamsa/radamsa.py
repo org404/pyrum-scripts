@@ -11,14 +11,18 @@ import shutil
 import ujson
 import time
 import uuid
+import sys
 import os
 
 
 NAME, PASS = os.environ.get("NAME"), os.environ.get("PASS")
+USE_VOYEUR = True
 if not NAME:
-    raise ValueError("You must specify basic auth name for voyeur (env 'NAME')!")
+    #logging.warning("You must specify basic auth name for voyeur (env 'NAME')!")
+    USE_VOYEUR = False
 if not PASS:
-    raise ValueError("You must specify basic auth password for voyeur (env 'PASS')!")
+    #logging.warning("You must specify basic auth password for voyeur (env 'PASS')!")
+    USE_VOYEUR = False
 
 DEBUG = bool(os.environ.get("DEBUG", 0))
 
@@ -27,7 +31,7 @@ PORT = 3500
 BASE_URL   = f"http://{ADDR}:{PORT}/eth/v1alpha1"
 VOYEUR_URL = f"https://{NAME}:{PASS}@voyeur.catdrew.dev/api/v1/entries"
 # You can use values like 1000 and 100 (accordingly) here and it will remain decently fast.
-AMOUNT = 50
+AMOUNT = 25
 INFINITE = bool(os.environ.get("INFINITE", 0))
 LOOPS = float("inf" if INFINITE else 50)
 TMP_FN = "fuzz-%s"
@@ -35,11 +39,11 @@ TMP_FN = "fuzz-%s"
 #
 # Note:
 #     By default radamsa uses /dev/urandom, so range is from 0x00 to 0xFF. But it
-#     seems like radamsa will happily accept any range. So we are generating
-#     those values ourselves with 'random' module, and later using the seed.
-#     If we really want we can also just call /dev/urandom from here via
-#     'subprocess' (it's *not* worth it).
-#                                                     - andrew, April 7 2021
+#     seems like radamsa will happily accept any range. So we are generating those
+#     values ourselves with 'random' module, and later using the seed. If we really
+#     want we can also just call /dev/urandom from here via 'subprocess' (it's *not*
+#     worth it).
+#                                                                  - andrew, April 7 2021
 #
 SEED = random.randint(1, 255)
 
@@ -92,10 +96,8 @@ async def make_request(index, session, ctx):
 
     if ctx["method"] == "POST":
         async with session.post(ctx["url"], data=payload, timeout=20) as resp:
-            if resp.status == 200:
-                d = {"status": 200}
-            else:
-                d = await resp.json()
+            d = await resp.json()
+            d.update({"status": resp.status})
 
         # Too much...
         #logging.debug("Request #%s, seed %s, data: %s ...", index, ctx["seed"], d)
@@ -112,10 +114,8 @@ async def make_request(index, session, ctx):
             payload = 0
 
         async with session.get(ctx["url"].format(generated=payload), timeout=20) as resp:
-            if resp.status == 200:
-                d = {"status": 200}
-            else:
-                d = await resp.json()
+            d = await resp.json()
+            d.update({"status": resp.status})
 
         # Too much...
         #logging.debug("Request #%s, seed %s, data: %s ...", index, ctx["seed"], d)
@@ -178,13 +178,13 @@ async def fuzzing_routine(method: str, base_url: str, url_path: str, source_path
         for i in range(len(res)):
             item = res[i]
 
-            # First, we skip requests that have status 200. At least for now, it's much easier to ignore successful ones to work with errors only.
-            if item.get("status") == 200:
+            # First, we skip requests that have statuses 200 or 400, they are normal behavior. We also skip 404, because it's just an empty page.
+            if item["status"] in (200, 400, 404):
                 continue
 
             # For now limit stored requests to only ones containing "error". The problem here is that we fuzz a lot, so we need to come up with a better policy for storing errors.
-            if "error" in item["message"]:  # @TemporarySolution
-                continue
+            #if "error" not in item["message"]:  # @TemporarySolution
+            #    continue
 
             # Then, we delete useless/empty data before sending it.
             assert item["details"] != ""
@@ -214,7 +214,7 @@ async def fuzzing_routine(method: str, base_url: str, url_path: str, source_path
         #     we will have an ability to replay the request data, and if we
         #     find something interesting and want to replay it. So for now
         #     just extract errors and prettify the output, as below.
-        #                                                  - andrew, April 7 2021
+        #                                                 - andrew, April 7 2021
         # Initial idea (too much memory):
         #     with open("data/output.json", "w+") as f:
         #         json.dump(all_data, f, indent=4)
@@ -223,14 +223,15 @@ async def fuzzing_routine(method: str, base_url: str, url_path: str, source_path
         #     We are using this script as a show-case for voyeur, the service
         #     which can be used for logs storage, visualization and analysis.
         #
-        async with aiohttp.ClientSession(headers={"Content-Type": "application/json", "X-Namespace": "radamsa fuzzing"}) as session:
-            # Sending the whole list (you can alternatively send one by one).
-            async with session.post(VOYEUR_URL, json = array_to_send, timeout = 5) as resp:
-                r = await resp.json()
-                logging.info(
-                    "Sent %s entries to voyeur, status: %s ...",
-                    len(array_to_send), r["code"], extra=context,
-                )
+        if USE_VOYEUR:
+            async with aiohttp.ClientSession(headers={"Content-Type": "application/json", "X-Namespace": "radamsa fuzzing"}) as session:
+                # Sending the whole list (you can alternatively send one by one).
+                async with session.post(VOYEUR_URL, json = array_to_send, timeout = 5) as resp:
+                    r = await resp.json()
+                    logging.info(
+                        "Sent %s entries to voyeur, status: %s ...",
+                        len(array_to_send), r["code"], extra=context,
+                    )
 
     # In the end just group all results by error type and show count.
     if DEBUG:
@@ -239,8 +240,13 @@ async def fuzzing_routine(method: str, base_url: str, url_path: str, source_path
 
 
 async def main():
-    reqs = await asyncio.gather(
-        # Fuzzing validator endpoints that expect POST request.
+    # Read arguments from command line.
+    #try:
+    arg_method, arg_path, arg_payload = sys.argv[1:4]
+    #except:
+
+    reqs = await fuzzing_routine(arg_method, BASE_URL, arg_path, arg_payload, SEED, LOOPS, AMOUNT)
+    """
         fuzzing_routine("POST", BASE_URL, "/validator/block",            "data/block.json", SEED, LOOPS, AMOUNT),
         fuzzing_routine("POST", BASE_URL, "/validator/attestation",      "data/block.json", SEED, LOOPS, AMOUNT),
         fuzzing_routine("POST", BASE_URL, "/validator/aggregate",        "data/block.json", SEED, LOOPS, AMOUNT),
@@ -277,7 +283,7 @@ async def main():
         # Fuzzing beacon node endpoints that expect GET request.
         fuzzing_routine("GET", BASE_URL, "/beacon/committees?epoch={generated}",       "data/slot.json", SEED, LOOPS, AMOUNT),  # epoch is a number
         fuzzing_routine("GET", BASE_URL, "/beacon/individual_votes?epoch={generated}", "data/slot.json", SEED, LOOPS, AMOUNT),  # epoch is a number
-    )
+    """
 
     if DEBUG:
         for data in reqs:
